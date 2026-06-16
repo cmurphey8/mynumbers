@@ -1,0 +1,51 @@
+{
+  "name": "arithmix",
+  "version": "0.2.0",
+  "description": "Arithmetic puzzle game: combine given numbers to reach a target.",
+  "main": "./dist/lib/arithmix.umd.js",
+  "module": "./dist/lib/arithmix.es.js",
+  "types": "./dist/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/arithmix.es.js",
+      "require": "./dist/lib/arithmix.umd.js"
+    }
+  },
+  "files": [
+    "dist/lib"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "prepare": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@emotion/react": ">=11",
+    "@emotion/styled": ">=11",
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
+    "jsdom": "^25.0.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0",
+    "vite-plugin-dts": "^5.0.0",
+    "vitest": "^4.0.0"
+  }
+}
