@@ -1,6 +1,6 @@
 {
   "name": "@mitodl/arithmix",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Arithmetic puzzle game: combine given numbers to reach a target.",
   "main": "./dist/lib/arithmix.umd.js",
   "module": "./dist/lib/arithmix.es.js",
