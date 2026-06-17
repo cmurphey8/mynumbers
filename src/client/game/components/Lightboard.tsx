@@ -91,11 +91,14 @@ const Surface = styled.div`
 const EquationLine = styled.div`
   position: absolute;
   font-family: 'Caveat', cursive;
-  font-size: clamp(16px, 4.5vw, 34px);
+  font-size: clamp(12px, 3vw, 22px);
   font-weight: 600;
   white-space: nowrap;
   line-height: 1;
-  padding: 0.4em 24px 0.3em 0;
+  padding: 0.3em 12px 0.2em 0;
+  max-width: 30%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   clip-path: inset(0 100% 0 0);
   animation: lb-write-in-eq 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 `
