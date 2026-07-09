@@ -821,136 +821,158 @@ body.explainer-mode {
 }
 
 /* ── Permutation enumerator (slide 5) ─────────────────────── */
-.ex-perm {
-  display: grid;
-  gap: 12px;
-}
-.ex-perm-board {
-  font-size: 22px;
-  font-family: 'Fredoka One', sans-serif;
-  padding: 16px 14px;
-  background: var(--c-search-bg);
-  border: 1px solid color-mix(in srgb, var(--c-search) 25%, var(--line));
-  border-radius: 10px;
-  text-align: center;
-  letter-spacing: 1px;
-}
-.ex-pslot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 38px;
-  height: 38px;
-  margin: 0 2px;
-  background: #fff;
-  border: 2px dashed var(--c-search);
-  color: var(--c-search);
-  border-radius: 8px;
-  font-size: 18px;
-  transition: background 220ms, color 220ms, transform 220ms;
-}
-.ex-pslot.is-filled {
-  background: var(--c-search);
-  color: #fff;
-  border-style: solid;
-}
-.ex-pslot.is-pulse { transform: scale(1.08); }
-
-.ex-eq {
-  margin: 0 6px 0 10px;
-  color: var(--ink-soft);
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
-.ex-result {
-  display: inline-block;
-  min-width: 48px;
-  color: var(--c-search);
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
-.ex-perm-board.has-result .ex-eq,
-.ex-perm-board.has-result .ex-result {
-  opacity: 1;
-}
-.ex-result-check {
-  display: inline-block;
-  margin-left: 6px;
-  color: #16a34a;
-  opacity: 0;
-  transform: scale(0.6);
-  transition: opacity 220ms ease, transform 220ms ease;
-}
-.ex-result-check.is-visible {
-  opacity: 1;
-  transform: scale(1.05);
-}
-
-.ex-perm-readout {
+/* ── Search space & expected effort (slide 4) ─────────────── */
+/* Controls sit in one wrap-friendly bar above the plots. */
+.ex-search-controls {
   display: flex;
-  gap: 14px;
   align-items: center;
-  font-size: 14px;
-  color: var(--ink);
-  justify-content: center;
+  gap: 12px;
   flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
 }
-.ex-pm-pill {
-  padding: 3px 10px;
+.ex-control-level {
+  flex: 1 1 220px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ex-control-level label {
+  color: var(--c-prob);
+  display: flex;
+  justify-content: space-between;
+}
+.ex-control-level label strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.ex-search-controls .ex-stat-card { flex: 0 0 auto; min-width: 96px; padding: 6px 10px; }
+.ex-search-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.ex-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
   border-radius: 999px;
+  background: color-mix(in srgb, var(--c-search) 35%, var(--line));
+  outline: none;
+  margin-top: 2px;
+}
+.ex-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--c-search);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+}
+.ex-range::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--c-search);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+}
+.ex-mini-btn-ghost {
+  background: #fff;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+.ex-mini-btn-ghost:hover { background: var(--bg-soft); }
+.ex-run-readout {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ex-run-readout strong { color: var(--ink); }
+
+/* Two equal plots: side-by-side on wide screens, stacked when narrow. */
+.ex-plots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.ex-plot {
+  margin: 0;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ex-chart-title {
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  background: #e5e7eb;
-  color: var(--ink-soft);
-}
-.ex-pm-pill.is-match { background: #d1fae5; color: #065f46; }
-.ex-pm-pill.is-miss  { background: #fee2e2; color: #991b1b; }
-
-.ex-perm-controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.ex-counter-card {
-  background: var(--bg-soft);
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
   color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.ex-chart-sub {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: #9ca3af;
+}
+.ex-dist-canvas {
+  width: 100%;
+  height: 190px;
+  display: block;
+}
+.ex-chart-cap {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.4;
 }
 
-.ex-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
+.ex-effort-svg {
+  width: 100%;
+  height: 190px; /* matches the distribution canvas so the two shrink in unison */
+  display: block;
+  margin-top: 2px;
+  overflow: visible;
 }
-.ex-switch input { display: none; }
-.ex-switch-track {
-  width: 36px;
-  height: 20px;
-  background: #cbd5e1;
-  border-radius: 99px;
-  position: relative;
-  transition: background 180ms;
+.ex-effort-dot { cursor: pointer; transition: r 120ms; }
+
+.ex-tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: #0f172a;
+  color: #fff;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  z-index: 60;
+  opacity: 0;
+  transition: opacity 120ms;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.ex-switch-knob {
-  position: absolute;
-  top: 2px; left: 2px;
-  width: 16px; height: 16px;
-  background: #fff;
-  border-radius: 50%;
-  transition: transform 180ms;
+.ex-tooltip.is-visible { opacity: 1; }
+
+@media (max-width: 680px) {
+  .ex-plots { grid-template-columns: 1fr; }
 }
-.ex-switch input:checked + .ex-switch-track { background: var(--c-search); }
-.ex-switch input:checked + .ex-switch-track .ex-switch-knob { transform: translateX(16px); }
-.ex-switch-label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+@media (max-width: 560px) {
+  .ex-search-actions { margin-left: 0; width: 100%; }
+}
 
 .ex-formula-card {
   background: #fff;
@@ -1300,8 +1322,15 @@ body.explainer-mode {
   .ex-h { font-size: 18px; }
   .ex-stats { grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
   .ex-stat-val { font-size: 14px; }
-  .ex-perm-board { font-size: 16px; padding: 10px; letter-spacing: 0; }
-  .ex-pslot { min-width: 28px; height: 28px; font-size: 14px; }
   .ex-pipeline { gap: 2px; }
   .ex-pipe-arrow { display: none; }
+  /* Persistent puzzle strip: shrink target + equation so it stays on one line. */
+  .ex-mini-target { min-width: 62px; padding: 6px 8px; }
+  .ex-mini-target-val { font-size: 24px; }
+  .ex-mini-label { font-size: 9px; letter-spacing: 0.5px; }
+  .ex-mini-template { font-size: 14px; gap: 2px; padding: 5px 6px; }
+  .ex-tok { padding: 0 1px; }
+  .ex-mini-slot { min-width: 22px; height: 24px; font-size: 12px; letter-spacing: 0; }
+  .ex-mini-bank { gap: 4px; padding: 5px 6px; }
+  .ex-mini-chip { min-width: 22px; height: 24px; font-size: 12px; padding: 0 5px; }
 }
