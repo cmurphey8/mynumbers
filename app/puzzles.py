@@ -47,7 +47,7 @@ DIFFICULTY_CONFIGS = {
     2: {
         "ops": ["+", "-"],
         "min_leaf": 1, "max_leaf": 12,
-        "target_min": 15, "target_max": 30,
+        "target_min": 15, "target_max": 32,
         "min_parens": 0, "max_parens": 0,
         "max_muls": 0,  "max_divs": 0,
     },
@@ -55,83 +55,78 @@ DIFFICULTY_CONFIGS = {
     3: {
         "ops": ["+", "-"],
         "min_leaf": 1, "max_leaf": 15,
-        "target_min": 20, "target_max": 35,
-        "min_parens": 1, "max_parens": 2,
+        "target_min": 18, "target_max": 40,
+        "min_parens": 1, "max_parens": 1,
         "max_muls": 0,  "max_divs": 0,
     },
-    # ── Single * introduced, no parentheses ──────────────────────────────────
+    # ── Single * introduced, no parentheses (numbers pulled back) ─────────────
     4: {
         "ops": ["+", "-", "*"],
         "min_leaf": 1, "max_leaf": 9,
-        "target_min": 25, "target_max": 45,
+        "target_min": 20, "target_max": 46,
         "min_parens": 0, "max_parens": 0,
         "max_muls": 1,  "max_divs": 0,
     },
     # ── Multiple *, still no parentheses ─────────────────────────────────────
     5: {
         "ops": ["+", "-", "*"],
-        "min_leaf": 1, "max_leaf": 10,
-        "target_min": 30, "target_max": 55,
+        "min_leaf": 1, "max_leaf": 11,
+        "target_min": 24, "target_max": 56,
         "min_parens": 0, "max_parens": 0,
         "max_muls": None, "max_divs": 0,
     },
     # ── Single * inside parentheses ──────────────────────────────────────────
     6: {
         "ops": ["+", "-", "*"],
-        "min_leaf": 2, "max_leaf": 10,
-        "target_min": 35, "target_max": 60,
+        "min_leaf": 2, "max_leaf": 11,
+        "target_min": 30, "target_max": 64,
         "min_parens": 1, "max_parens": 1,
         "max_muls": 1,  "max_divs": 0,
     },
-    # ── Single / introduced, shallow (no nesting around it) ──────────────────
+    # ── Division chapter: introduced ALONE (no *), every puzzle has one ───────
     7: {
-        "ops": ["+", "-", "*", "/"],
-        "min_leaf": 2, "max_leaf": 12,
-        "target_min": 50, "target_max": 75,
-        "min_parens": 0, "max_parens": 1,
-        "max_muls": 1,  "max_divs": 1,
+        "ops": ["+", "-", "/"],
+        "min_leaf": 2, "max_leaf": 18,
+        "target_min": 20, "target_max": 100,
+        "min_parens": 0, "max_parens": 2,
+        "max_muls": 0,  "max_divs": 2,
         "min_divs": 1,
     },
-    # ── Multiple * with parentheses ───────────────────────────────────────────
+    # ── * returns; division eased to ~40% (breather) ─────────────────────────
     8: {
-        "ops": ["+", "-", "*"],
-        "min_leaf": 2, "max_leaf": 12,
-        "target_min": 45, "target_max": 70,
-        "min_parens": 1, "max_parens": 2,
-        "max_muls": None, "max_divs": 0,
-    },
-    
-    # ── Multiple /, limited nesting ───────────────────────────────────────────
-    9: {
         "ops": ["+", "-", "*", "/"],
         "min_leaf": 2, "max_leaf": 14,
-        "target_min": 60, "target_max": 85,
+        "target_min": 30, "target_max": 100,
         "min_parens": 1, "max_parens": 2,
-        "max_muls": 2,  "max_divs": None,
+        "max_muls": 1,  "max_divs": 2,
+        "div_weight": 1.5,
     },
-    # ── All ops, moderate nesting ─────────────────────────────────────────────
+    # ── Division ramps up to ~57% ────────────────────────────────────────────
+    9: {
+        "ops": ["+", "-", "*", "/"],
+        "min_leaf": 2, "max_leaf": 15,
+        "target_min": 35, "target_max": 110,
+        "min_parens": 1, "max_parens": 2,
+        "max_muls": 1,  "max_divs": 2,
+        "div_weight": 2.5,
+    },
+    # ── Nesting + more *, division ~70% ──────────────────────────────────────
     10: {
         "ops": ["+", "-", "*", "/"],
-        "min_leaf": 3, "max_leaf": 15,
-        "target_min": 70, "target_max": 100,
-        "min_parens": 2, "max_parens": 3,
-        "max_muls": None, "max_divs": None,
+        "min_leaf": 2, "max_leaf": 16,
+        "target_min": 36, "target_max": 122,
+        "min_parens": 2, "max_parens": 2,
+        "max_muls": 2,  "max_divs": 2,
+        "div_weight": 3,
     },
-    # ── All ops, deep nesting ─────────────────────────────────────────────────
+    # ── Max nesting + max *, division ~72% ───────────────────────────────────
     11: {
         "ops": ["+", "-", "*", "/"],
-        "min_leaf": 3, "max_leaf": 18,
-        "target_min": 85, "target_max": 115,
-        "min_parens": 3, "max_parens": 4,
-        "max_muls": None, "max_divs": None,
-    },
-    # ── Maximum chaos ─────────────────────────────────────────────────────────
-    12: {
-        "ops": ["+", "-", "*", "/"],
-        "min_leaf": 4, "max_leaf": 20,
-        "target_min": 100, "target_max": 140,
-        "min_parens": 4, "max_parens": 5,
-        "max_muls": None, "max_divs": None,
+        "min_leaf": 2, "max_leaf": 18,
+        "target_min": 45, "target_max": 130,
+        "min_parens": 2, "max_parens": 3,
+        "max_muls": None, "max_divs": 2,
+        "div_weight": 3,
     },
 }
 
@@ -160,17 +155,30 @@ def get_round(round_id: str) -> Optional[Dict]:
 
 
 def make_random_expr_constrained(
-    num_operands: int, allowed_ops: List[str], min_val: int, max_val: int
+    num_operands: int,
+    allowed_ops: List[str],
+    min_val: int,
+    max_val: int,
+    div_weight: float = 1,
 ) -> Expr:
-    """Build expression with constrained operators and values."""
+    """Build expression with constrained operators and values.
+
+    div_weight > 1 over-samples the division operator (relative to +, -, *) so a
+    level can dial up how often division appears; div_weight == 1 keeps the
+    uniform operator choice.
+    """
     assert num_operands >= 1
     if num_operands == 1:
         return random.randint(min_val, max_val)
     left_count = random.randint(1, num_operands - 1)
     right_count = num_operands - left_count
-    left = make_random_expr_constrained(left_count, allowed_ops, min_val, max_val)
-    right = make_random_expr_constrained(right_count, allowed_ops, min_val, max_val)
-    op = random.choice(allowed_ops)
+    left = make_random_expr_constrained(left_count, allowed_ops, min_val, max_val, div_weight)
+    right = make_random_expr_constrained(right_count, allowed_ops, min_val, max_val, div_weight)
+    if div_weight != 1 and "/" in allowed_ops:
+        weights = [div_weight if op == "/" else 1 for op in allowed_ops]
+        op = random.choices(allowed_ops, weights=weights)[0]
+    else:
+        op = random.choice(allowed_ops)
     return (left, op, right)
 
 
@@ -248,7 +256,7 @@ def expr_to_minimal_value_string(
             need_paren = True
         if (
             is_right
-            and op in ("-", "/")
+            and parent_op in ("-", "/")
             and OP_PRECEDENCE[op] == OP_PRECEDENCE[parent_op]
         ):
             need_paren = True
@@ -282,7 +290,7 @@ def expr_to_minimal_placeholder_string(
             need_paren = True
         if (
             is_right
-            and op in ("-", "/")
+            and parent_op in ("-", "/")
             and OP_PRECEDENCE[op] == OP_PRECEDENCE[parent_op]
         ):
             need_paren = True
@@ -525,8 +533,8 @@ def puzzle_new(
 @router.get("/puzzle/rush", response_model=PuzzleOut)
 def puzzle_rush(difficulty: int = 1, decoys: int = 2):
     """Generate puzzle for rush mode with difficulty 1-12."""
-    if not 1 <= difficulty <= 12:
-        raise HTTPException(status_code=400, detail="difficulty must be 1-12")
+    if not 1 <= difficulty <= 11:
+        raise HTTPException(status_code=400, detail="difficulty must be 1-11")
 
     config = DIFFICULTY_CONFIGS[difficulty]
     logger.info(f"puzzle_rush called: difficulty={difficulty}, decoys={decoys}")
@@ -538,6 +546,7 @@ def puzzle_rush(difficulty: int = 1, decoys: int = 2):
             allowed_ops=config["ops"],
             min_val=config["min_leaf"],
             max_val=config["max_leaf"],
+            div_weight=config.get("div_weight", 1),
         )
 
         # 2. Evaluate expression

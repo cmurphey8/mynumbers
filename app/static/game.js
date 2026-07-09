@@ -62,17 +62,16 @@ let scrollLocked = false;
 
 function calculateDifficulty(solved) {
   if (solved <= 1)  return 1;  // puzzle 1
-  if (solved <= 2)  return 2;  // puzzle 2
-  if (solved <= 4)  return 3;  // puzzles 3–4
-  if (solved <= 6)  return 4;  // puzzles 5–6
-  if (solved <= 8)  return 5;  // puzzles 7–8
-  if (solved <= 10) return 6;  // puzzles 9–10
-  if (solved <= 12) return 7;  // puzzles 11–12
-  if (solved <= 13) return 8;  // puzzle 13
-  if (solved <= 14) return 9;  // puzzle 14
-  if (solved <= 15) return 10; // puzzle 15
-  if (solved <= 16) return 11; // rare
-  return 12;                   // exceptional
+  if (solved <= 3)  return 2;  // puzzle 2
+  if (solved <= 5)  return 3;  // puzzles 3–4
+  if (solved <= 7)  return 4;  // puzzles 5–6
+  if (solved <= 9)  return 5;  // puzzles 7–8
+  if (solved <= 11) return 6;  // puzzles 9–10
+  if (solved <= 13) return 7;  // puzzles 11–12 (division chapter)
+  if (solved <= 15) return 8;  // puzzles 13–14
+  if (solved <= 17) return 9;  // puzzles 15–16
+  if (solved <= 19) return 10; // puzzles 17–18
+  return 11;                   // puzzles 19+
 }
 
 // function getPoints(difficulty) {

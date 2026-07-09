@@ -4,7 +4,7 @@
      1 hero / pipeline
      2 expression trees (build / evaluate)
      3 rejection sampling (real random expressions)
-     4 permutation verifier
+     4 search space & expected effort (solution rarity)
      5 MIT Learn connections
    ============================================================ */
 
@@ -91,6 +91,9 @@ window.addEventListener("popstate", (e) => {
     dotsHost.appendChild(b);
   }
 
+  // Slide 4 registers its animation stopper here so goTo() can halt it on nav-away.
+  let s4StopAnim = function () {};
+
   function goTo(n, opts) {
     n = Math.max(1, Math.min(TOTAL_SLIDES, n));
     const previous = current;
@@ -109,7 +112,7 @@ window.addEventListener("popstate", (e) => {
       slide.classList.add("is-jumped");
     }
     // Stop background activity when leaving slides that run timers
-    if (n !== 4) stopAuto();
+    if (n !== 4) s4StopAnim();
     if (n !== 3) stopStream();
     if (n !== 2) cancelTreeAnims();
     if (n === 2 && previous !== 2) resetTreeAndAnimate();
@@ -595,138 +598,233 @@ window.addEventListener("popstate", (e) => {
     document.getElementById("d3-narrow-fail").textContent = fmtFail(p);
   })();
 
-  /* ──────────────── Slide 4: Permutation verifier ──────────────── */
-  const BANK = [2, 3, 4, 5, 7, 8, 9];
-  const TARGET = 29;
-  const K = 5;
-  const TOTAL_PERMS = 2520;
+  /* ──────────────── Slide 4: Search space & expected effort ──────────────── */
+  (function slide4() {
+    const N = 2520; // P(7,5) — arrangements of 5 chips from the 7-chip bank
 
-  // Lazy lex-order k-permutation generator over indices [0..n-1].
-  // Yields one arrangement per next() — used so step / autoplay share state.
-  function* permGen(n, k) {
-    const idx = Array.from({ length: n }, (_, i) => i);
-    function* recurse(arr, depth) {
-      if (depth === k) { yield arr.slice(0, k); return; }
-      for (let i = depth; i < arr.length; i++) {
-        [arr[depth], arr[i]] = [arr[i], arr[depth]];
-        yield* recurse(arr, depth + 1);
-        [arr[depth], arr[i]] = [arr[i], arr[depth]];
+    // Measured median solution count S per difficulty level (out of N),
+    // from 300 generated puzzles/level against the shipped rush configs.
+    const MEDIAN_S = { 1:240, 2:120, 3:72, 4:84, 5:48, 6:28, 7:12, 8:16, 9:12, 10:8, 11:8 };
+    const LEVELS = Object.keys(MEDIAN_S).map(Number);
+    const Efor = (s) => Math.round((N + 1) / (s + 1)); // exact mean first-hit
+
+    // Exact first-hit position under a random search order: the minimum of a
+    // uniformly random S-subset of {1..N}. Its mean is exactly (N+1)/(S+1).
+    // Sample by walking the survival function P(min > k).
+    function sampleFirstHit(s) {
+      const v = Math.random();
+      let surv = 1;
+      for (let k = 1; k <= N; k++) {
+        surv *= (N - k + 1 - s) / (N - k + 1);
+        if (surv <= v) return k;
+      }
+      return N - s + 1;
+    }
+
+    function niceCeil(x) {
+      const pow = Math.pow(10, Math.floor(Math.log10(x)));
+      const n = x / pow;
+      const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+      return step * pow;
+    }
+
+    const GOLD = "#a16207", GOLD_FILL = "rgba(161,98,7,0.30)", BLUE = "#1E63D8",
+          INK = "#0f172a", MUTE = "#9ca3af", GRID = "#ececec";
+
+    const canvas = document.getElementById("s4-dist");
+    const ctx = canvas.getContext("2d");
+
+    let level = 7, S = MEDIAN_S[level], E = Efor(S);
+    let xMax = 100, bins = 44, binW = 1, hist = [], trials = 0, sum = 0, pmf = [], yMax = 1;
+
+    function configureBins() {
+      xMax = Math.min(N, niceCeil(Math.max(40, E * 6)));
+      binW = xMax / bins;
+      hist = new Array(bins).fill(0);
+      pmf = new Array(bins).fill(0);
+      trials = 0; sum = 0;
+      let surv = 1, prev = 1;
+      for (let k = 1; k <= xMax; k++) {
+        surv *= (N - k + 1 - S) / (N - k + 1);
+        const p = Math.max(0, prev - surv); // P(first hit = k)
+        prev = surv;
+        const b = Math.min(bins - 1, Math.floor((k - 1) / binW));
+        pmf[b] += p;
+      }
+      yMax = (Math.max.apply(null, pmf) || 1) * 1.5;
+    }
+
+    function addSamples(n) {
+      for (let i = 0; i < n; i++) {
+        const k = sampleFirstHit(S);
+        trials++; sum += k;
+        const b = Math.floor((k - 1) / binW);
+        if (b >= 0 && b < bins) hist[b]++;
       }
     }
-    yield* recurse(idx, 0);
-  }
 
-  function evalTemplate(a, b, c, d, e) {
-    if (e === 0) return NaN;
-    return ((a + b) * c) - (d / e);
-  }
+    // ── distribution rendering (DPR-aware canvas) ──
+    let cssW = 520; const cssH = 190;
+    const PAD = { l: 30, r: 12, t: 12, b: 26 };
+    const xToPx = (x) => PAD.l + (x / xMax) * (cssW - PAD.l - PAD.r);
+    const yToPx = (p) => cssH - PAD.b - (Math.min(p, yMax) / yMax) * (cssH - PAD.t - PAD.b);
 
-  // Count solutions once at load. Used to display the expected-checks stat:
-  // assuming the S solutions are uniformly distributed across N arrangements,
-  // the expected index of the first hit is (N + 1) / (S + 1).
-  const SOLUTIONS_COUNT = (() => {
-    let s = 0;
-    for (const perm of permGen(BANK.length, K)) {
-      if (evalTemplate(...perm.map((i) => BANK[i])) === TARGET) s++;
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      cssW = Math.max(240, Math.round(rect.width) || 520);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawDist();
     }
-    return s;
+
+    function vline(xVal, color, dashed, label, labelY) {
+      const px = Math.min(cssW - PAD.r, Math.max(PAD.l, xToPx(xVal)));
+      ctx.strokeStyle = color; ctx.lineWidth = 2;
+      ctx.setLineDash(dashed ? [4, 3] : []);
+      ctx.beginPath(); ctx.moveTo(px, PAD.t); ctx.lineTo(px, cssH - PAD.b); ctx.stroke();
+      ctx.setLineDash([]);
+      const right = px > cssW - 78;
+      ctx.fillStyle = color; ctx.font = "600 11px system-ui, sans-serif";
+      ctx.textAlign = right ? "right" : "left";
+      ctx.fillText(label, px + (right ? -4 : 4), labelY);
+      ctx.textAlign = "left";
+    }
+
+    function drawDist() {
+      ctx.clearRect(0, 0, cssW, cssH);
+      // baseline + x ticks
+      ctx.strokeStyle = GRID; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(PAD.l, cssH - PAD.b); ctx.lineTo(cssW - PAD.r, cssH - PAD.b); ctx.stroke();
+      ctx.fillStyle = MUTE; ctx.font = "11px system-ui, sans-serif";
+      [[0, "left"], [xMax / 2, "center"], [xMax, "right"]].forEach(([tx, al]) => {
+        ctx.textAlign = al;
+        ctx.fillText(String(Math.round(tx)), xToPx(tx), cssH - PAD.b + 15);
+      });
+      ctx.textAlign = "left";
+      // empirical bars (relative frequency)
+      if (trials > 0) {
+        ctx.fillStyle = GOLD_FILL;
+        for (let b = 0; b < bins; b++) {
+          if (!hist[b]) continue;
+          const y = yToPx(hist[b] / trials);
+          const x0 = xToPx(b * binW), x1 = xToPx((b + 1) * binW);
+          ctx.fillRect(x0 + 0.5, y, Math.max(1, x1 - x0 - 1), (cssH - PAD.b) - y);
+        }
+      }
+      // theoretical curve
+      ctx.strokeStyle = GOLD; ctx.lineWidth = 2; ctx.beginPath();
+      for (let b = 0; b < bins; b++) {
+        const x = xToPx((b + 0.5) * binW), y = yToPx(pmf[b]);
+        b === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      // markers: expected value E (blue, dashed) then running average (ink),
+      // labels staggered in Y so they don't collide when avg is near E.
+      vline(E, BLUE, true, "E ≈ " + E, PAD.t + 9);
+      if (trials > 0) vline(sum / trials, INK, false, "avg " + Math.round(sum / trials), PAD.t + 22);
+    }
+
+    function updateReadout() {
+      document.getElementById("s4-trials").textContent = trials;
+      document.getElementById("s4-avg").textContent = trials ? Math.round(sum / trials) : "—";
+    }
+
+    // ── run controls ──
+    let animTimer = null;
+    function stopAnim() { if (animTimer) { clearInterval(animTimer); animTimer = null; } }
+    s4StopAnim = stopAnim; // expose to goTo() for nav-away cleanup
+    function runBatch(total) {
+      stopAnim();
+      if (reducedMotion || total <= 1) { addSamples(total); updateReadout(); drawDist(); return; }
+      let done = 0; const chunk = Math.max(1, Math.round(total / 20));
+      animTimer = setInterval(() => {
+        const n = Math.min(chunk, total - done);
+        addSamples(n); done += n; updateReadout(); drawDist();
+        if (done >= total) stopAnim();
+      }, 45);
+    }
+
+    // ── effort curve (SVG across levels) ──
+    const effortSvg = document.getElementById("s4-effort");
+    // W is re-measured to the SVG's pixel width so the chart draws 1:1 (no
+    // aspect-scaling); H is fixed to match the distribution canvas height.
+    const eP = { l: 34, r: 16, t: 14, b: 26, W: 560, H: 190 }, eYMax = 300;
+    const eX = (L) => eP.l + (L - 1) / (LEVELS.length - 1) * (eP.W - eP.l - eP.r);
+    const eY = (v) => eP.H - eP.b - (v / eYMax) * (eP.H - eP.t - eP.b);
+
+    let tip = document.createElement("div");
+    tip.className = "ex-tooltip"; document.body.appendChild(tip);
+    const moveTip = (e) => { tip.style.left = (e.clientX + 12) + "px"; tip.style.top = (e.clientY - 12) + "px"; };
+    const hideTip = () => tip.classList.remove("is-visible");
+
+    function layoutEffort() {
+      const w = Math.round(effortSvg.getBoundingClientRect().width);
+      eP.W = Math.max(260, w || eP.W);
+      buildEffort();
+      highlightEffort(level);
+    }
+
+    function buildEffort() {
+      effortSvg.setAttribute("viewBox", `0 0 ${eP.W} ${eP.H}`);
+      const pts = LEVELS.map((L) => [eX(L), eY(Efor(MEDIAN_S[L]))]);
+      const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+      const area = "M" + eX(1).toFixed(1) + " " + eY(0).toFixed(1) + " " +
+        pts.map((p) => "L" + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ") +
+        " L" + eX(11).toFixed(1) + " " + eY(0).toFixed(1) + " Z";
+      let s = "";
+      [0, 100, 200, 300].forEach((g) => {
+        const y = eY(g);
+        s += `<line x1="${eP.l}" y1="${y}" x2="${eP.W - eP.r}" y2="${y}" stroke="${GRID}"/>`;
+        s += `<text x="${eP.l - 6}" y="${y + 3}" text-anchor="end" font-size="10" fill="${MUTE}">${g}</text>`;
+      });
+      s += `<path d="${area}" fill="rgba(161,98,7,0.10)"/>`;
+      s += `<path d="${line}" fill="none" stroke="${GOLD}" stroke-width="2"/>`;
+      LEVELS.forEach((L) => {
+        const x = eX(L), y = eY(Efor(MEDIAN_S[L]));
+        s += `<text x="${x}" y="${eP.H - eP.b + 14}" text-anchor="middle" font-size="10" fill="${MUTE}">${L}</text>`;
+        s += `<circle class="ex-effort-dot" data-level="${L}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${GOLD}" stroke="#fff" stroke-width="1.5"/>`;
+      });
+      s += `<text x="${eP.l}" y="9" font-size="10" fill="${MUTE}">expected checks E</text>`;
+      effortSvg.innerHTML = s;
+      effortSvg.querySelectorAll(".ex-effort-dot").forEach((dot) => {
+        const L = parseInt(dot.dataset.level, 10);
+        dot.addEventListener("click", () => { document.getElementById("s4-level").value = L; stopAnim(); setLevel(L); });
+        dot.addEventListener("mouseenter", (e) => { tip.textContent = `Level ${L} · S ≈ ${MEDIAN_S[L]} · E ≈ ${Efor(MEDIAN_S[L])}`; tip.classList.add("is-visible"); moveTip(e); });
+        dot.addEventListener("mousemove", moveTip);
+        dot.addEventListener("mouseleave", hideTip);
+      });
+    }
+    function highlightEffort(L) {
+      effortSvg.querySelectorAll(".ex-effort-dot").forEach((dot) => {
+        const on = parseInt(dot.dataset.level, 10) === L;
+        dot.setAttribute("r", on ? "6" : "4");
+        dot.setAttribute("fill", on ? BLUE : GOLD);
+      });
+    }
+
+    function setLevel(L) {
+      level = L; S = MEDIAN_S[L]; E = Efor(S);
+      document.getElementById("s4-level-val").textContent = L;
+      document.getElementById("s4-s").textContent = S;
+      document.getElementById("s4-e").textContent = E;
+      configureBins(); updateReadout(); drawDist(); highlightEffort(L);
+    }
+
+    document.getElementById("s4-run100").addEventListener("click", () => runBatch(100));
+    document.getElementById("s4-reset").addEventListener("click", () => { stopAnim(); configureBins(); updateReadout(); drawDist(); });
+    document.getElementById("s4-level").addEventListener("input", (e) => { stopAnim(); setLevel(parseInt(e.target.value, 10)); });
+
+    layoutEffort();
+    setLevel(7);
+    if (window.ResizeObserver) {
+      new ResizeObserver(resizeCanvas).observe(canvas);
+      new ResizeObserver(layoutEffort).observe(effortSvg);
+    }
+    window.addEventListener("resize", () => { resizeCanvas(); layoutEffort(); });
+    resizeCanvas();
   })();
-  const EXPECTED_CHECKS = Math.round((TOTAL_PERMS + 1) / (SOLUTIONS_COUNT + 1));
-  document.getElementById("p-solutions").textContent = SOLUTIONS_COUNT;
-  document.getElementById("p-expected").textContent = EXPECTED_CHECKS;
-
-  // Autoplay pacing: start slow so the eye can follow individual checks,
-  // then decay the per-step delay geometrically until it hits a fast floor.
-  const PERM_START_MS = 400;
-  const PERM_MIN_MS = 8;
-  const PERM_DECAY = 0.96;
-  let permState = null;
-  let permAutoTimer = null;
-  let permAutoSpeed = 0;
-
-  function resetPerm() {
-    permState = { gen: permGen(BANK.length, K), count: 0, done: false, found: false };
-    permAutoSpeed = 0;
-    fillSlots([null, null, null, null, null]);
-    document.getElementById("p-count").textContent = "0";
-    document.getElementById("p-total").textContent = TOTAL_PERMS;
-    document.getElementById("p-result").textContent = "";
-    document.querySelector(".ex-perm-board").classList.remove("has-result");
-    setMatch(null);
-  }
-
-  function setMatch(state) {
-    const check = document.getElementById("p-match");
-    if (!check) return;
-    check.classList.toggle("is-visible", state === "match");
-  }
-
-  function fillSlots(vals) {
-    for (let i = 0; i < 5; i++) {
-      const slot = document.querySelector(`.ex-pslot[data-slot="${i}"]`);
-      if (!slot) continue;
-      if (vals[i] === null || vals[i] === undefined) {
-        slot.textContent = "__";
-        slot.classList.remove("is-filled", "is-pulse");
-      } else {
-        slot.textContent = vals[i];
-        slot.classList.add("is-filled");
-        slot.classList.remove("is-pulse");
-        void slot.offsetWidth;
-        slot.classList.add("is-pulse");
-      }
-    }
-  }
-
-  function stepPerm() {
-    if (!permState) resetPerm();
-    if (permState.done) return false;
-    const next = permState.gen.next();
-    if (next.done) { permState.done = true; return false; }
-    const vals = next.value.map((i) => BANK[i]);
-    fillSlots(vals);
-    permState.count++;
-    document.getElementById("p-count").textContent = permState.count;
-    const v = evalTemplate(...vals);
-    document.getElementById("p-result").textContent = Number.isInteger(v) ? v : v.toFixed(2);
-    document.querySelector(".ex-perm-board").classList.add("has-result");
-    if (v === TARGET) {
-      setMatch("match");
-      permState.found = true;
-      permState.done = true;
-      return true;
-    }
-    setMatch("miss");
-    return null;
-  }
-
-  function stopAuto() {
-    if (permAutoTimer) { clearTimeout(permAutoTimer); permAutoTimer = null; }
-    const btn = document.getElementById("p-auto");
-    if (btn) btn.textContent = "Autoplay";
-  }
-
-  // Recursive setTimeout (not setInterval) so each tick can use a different
-  // delay — that's how the exponential ramp-up actually accelerates.
-  function scheduleNextPermTick() {
-    permAutoTimer = setTimeout(() => {
-      const r = stepPerm();
-      if (r === true || (permState && permState.done)) { stopAuto(); return; }
-      permAutoSpeed = Math.max(reducedMotion ? 1 : PERM_MIN_MS, permAutoSpeed * PERM_DECAY);
-      scheduleNextPermTick();
-    }, permAutoSpeed);
-  }
-
-  document.getElementById("p-step").addEventListener("click", () => { stopAuto(); stepPerm(); });
-  document.getElementById("p-reset").addEventListener("click", () => { stopAuto(); resetPerm(); });
-  document.getElementById("p-auto").addEventListener("click", () => {
-    if (permAutoTimer) { stopAuto(); return; }
-    document.getElementById("p-auto").textContent = "Pause";
-    // Fresh autoplay starts slow; resume after a pause keeps current speed.
-    if (permAutoSpeed === 0) permAutoSpeed = reducedMotion ? 1 : PERM_START_MS;
-    scheduleNextPermTick();
-  });
-  resetPerm();
 
   /* ──────────────── Init ──────────────── */
   goTo(1);

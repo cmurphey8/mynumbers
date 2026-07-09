@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>ARITHMIX — Explainer</title>
   <link rel="stylesheet" href="/static/styles.css?v=54" />
-  <link rel="stylesheet" href="/static/explainer.css?v=2" />
+  <link rel="stylesheet" href="/static/explainer.css?v=7" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fredoka+One&family=Patrick+Hand&family=Architects+Daughter&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -195,55 +195,44 @@
           </div>
         </section>
 
-        <!-- ─────────────── Slide 4: Permutation Verification ─────────────── -->
-        <section class="ex-slide" data-slide="4" data-tone="search" aria-label="Slide 4: Permutation verification">
+        <!-- ─────────────── Slide 4: Search space & expected effort ─────────────── -->
+        <section class="ex-slide" data-slide="4" data-tone="search" aria-label="Slide 4: Search space and expected effort">
           <div class="ex-row-head">
-            <h2 class="ex-h">Can the number bank actually solve the puzzle?</h2>
+            <h2 class="ex-h">A solution always exists — how rare is it?</h2>
             <span class="ex-course-tag" data-course="prob">Probability &amp; Statistical Data Analysis · PRIMARY</span>
           </div>
-          <p class="ex-sub">Each verification step is the same routine: <strong>pick</strong> five distinct chips from the seven-chip bank in a chosen order, <strong>drop</strong> them into the slots, <strong>evaluate</strong> the expression, and <strong>compare</strong> against the target. A miss advances to the next arrangement; a hit stops the search.</p>
-
-          <div class="ex-perm">
-            <div class="ex-perm-board" aria-label="Template with slots">
-              <span class="ex-paren">(</span><span class="ex-paren">(</span>
-              <span class="ex-pslot" data-slot="0">__</span>
-              <span class="ex-op">+</span>
-              <span class="ex-pslot" data-slot="1">__</span>
-              <span class="ex-paren">)</span>
-              <span class="ex-op">×</span>
-              <span class="ex-pslot" data-slot="2">__</span>
-              <span class="ex-paren">)</span>
-              <span class="ex-op">−</span>
-              <span class="ex-paren">(</span>
-              <span class="ex-pslot" data-slot="3">__</span>
-              <span class="ex-op">÷</span>
-              <span class="ex-pslot" data-slot="4">__</span>
-              <span class="ex-paren">)</span>
-              <span class="ex-eq">=</span>
-              <span class="ex-result" id="p-result"></span>
-              <span class="ex-result-check" id="p-match" aria-hidden="true">✓</span>
+         <p class="ex-sub">Every puzzle starts <em>from</em> a real answer, so at least one of the <strong>P(7,&nbsp;5)&nbsp;=&nbsp;7·6·5·4·3&nbsp;=&nbsp;2,520</strong> ways to drop five of the seven chips into the slots is guaranteed to work; the server's check can never come up empty. An algorithmic question is <strong>how many</strong> arrangements solve it, and how long does a search take to stumble onto one?</p>
+          <div class="ex-search-controls">
+            <div class="ex-control ex-control-level">
+              <label for="s4-level">Difficulty level <strong id="s4-level-val">7</strong></label>
+              <input type="range" id="s4-level" class="ex-range" min="1" max="11" step="1" value="7" aria-describedby="s4-level-val" />
             </div>
-
-            <div class="ex-perm-controls">
-              <button id="p-step" class="ex-mini-btn">Step</button>
-              <button id="p-auto" class="ex-mini-btn ex-mini-btn-primary">Autoplay</button>
-              <button id="p-reset" class="ex-mini-btn">Reset</button>
-              <div class="ex-counter-card">
-                <span id="p-count">0</span> / <span id="p-total">2520</span> checked
-              </div>
+            <div class="ex-stat-card"><div class="ex-stat-name">Solutions <em>S</em> / 2,520</div><div class="ex-stat-val" id="s4-s">—</div></div>
+            <div class="ex-stat-card"><div class="ex-stat-name">Expected checks <em>E</em></div><div class="ex-stat-val" id="s4-e">—</div></div>
+            <div class="ex-search-actions">
+              <button id="s4-run100" class="ex-mini-btn ex-mini-btn-primary">Run ×100 searches</button>
+              <button id="s4-reset" class="ex-mini-btn ex-mini-btn-ghost">Reset</button>
+              <span class="ex-run-readout"><strong id="s4-trials">0</strong> searches · avg <strong id="s4-avg">—</strong></span>
             </div>
+          </div>
 
-            <div class="ex-formula-card">
-              <div class="ex-formula-label">Permutations of 5 from a bank of 7</div>
-              <div class="ex-formula">P(7, 5) = 7 × 6 × 5 × 4 × 3 = <strong>2520</strong></div>
-              <div class="ex-formula-label" style="margin-top:8px">Expected checks until a solution</div>
-              <div class="ex-formula"><strong id="p-solutions"></strong> arrangements solve this puzzle &nbsp;→&nbsp; expect ≈ <strong id="p-expected"></strong> checks</div>
-            </div>
+          <div class="ex-plots">
+            <figure class="ex-plot">
+              <figcaption class="ex-chart-title">Checks until the first solution <span class="ex-chart-sub">— one random-order sweep each</span></figcaption>
+              <canvas id="s4-dist" class="ex-dist-canvas" role="img" aria-label="Distribution of how many arrangements are checked before the first solution is found"></canvas>
+              <p class="ex-chart-cap">Each search stops at its first hit; the bars build the distribution and the running average (dark) settles onto <em>E</em> (blue).</p>
+            </figure>
+
+            <figure class="ex-plot">
+              <figcaption class="ex-chart-title">Expected search across the levels <span class="ex-chart-sub">— sparser solutions, longer search</span></figcaption>
+              <svg id="s4-effort" class="ex-effort-svg" viewBox="0 0 560 190" role="img" aria-label="Expected checks by difficulty level, from one to eleven"></svg>
+              <p class="ex-chart-cap">Harder levels have fewer solutions, so search takes longer. Tap a point to jump the slider to that level.</p>
+            </figure>
           </div>
 
           <button class="ex-deeper" data-drawer="d4">Go deeper ▾</button>
           <div class="ex-drawer" id="d4" hidden>
-            <p>Search stops at the first arrangement that hits the target, so verification cost depends on how many solutions <em>S</em> the puzzle has. If <em>S</em> successes are uniformly distributed across <em>N</em> = 2520 arrangements, the expected position of the first hit is <em>E</em> = (<em>N</em> + 1) / (<em>S</em> + 1). A puzzle with many solutions resolves in a few hundred steps; a sparse puzzle (<em>S</em> = 1) climbs to ≈ 1260. That's why permutation verification stays cheap on the server: most puzzles short‑circuit long before scanning all 2520.</p>
+            <p>The expected number of checks is <em>E</em> = (<em>N</em> + 1) / (<em>S</em> + 1) with <em>N</em> = 2520 — but that assumes a <strong>random</strong> search order. The server actually scans a fixed order and stops at the first hit, so its real cost is deterministic; <em>E</em> is the model this distribution makes visible. It's the same first‑success idea as the sampler two slides back — a <strong>geometric</strong>‑style wait with <em>p</em> ≈ <em>S</em>/2520 — only now the "trials" are chip arrangements instead of random draws. And notice the curve isn't monotone: it spikes at <strong>level 7</strong> (every puzzle forces a division, so solutions are sparse) and eases at <strong>level 8</strong>, where division steps back down.</p>
           </div>
         </section>
 
@@ -275,7 +264,7 @@
                 <li>Search</li>
                 <li>Operator precedence &amp; parsing</li>
               </ul>
-              <a href="#" class="ex-course-cta" data-cta="secondary">Explore the course →</a>
+              <a href="https://learn.mit.edu/search?q=computational+thinking&resource=2971" class="ex-course-cta" data-cta="secondary">Explore the course →</a>
             </article>
           </div>
 
@@ -305,6 +294,6 @@
     </nav>
 
   </div>
-  <script src="/static/explainer.js?v=2"></script>
+  <script src="/static/explainer.js?v=7"></script>
 </body>
 </html>
