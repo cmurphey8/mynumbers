@@ -41,6 +41,16 @@ body.explainer-mode {
   padding: 16px 18px 22px;
 }
 
+/* The shared .container rule in styles.css sets `touch-action: none` so the
+   game's drag-and-drop never scrolls the page. The explainer reuses
+   .container but has no drag gameplay — it just needs to scroll vertically,
+   while the carousel's own left/right swipe is handled in JS (pointer events
+   on .ex-viewport). `pan-y` restores vertical finger-scrolling and leaves
+   horizontal gestures to the swipe handler. */
+body.explainer-mode .explainer-container {
+  touch-action: pan-y;
+}
+
 /* ── Top bar ──────────────────────────────────────────────── */
 .ex-topbar {
   display: flex;
@@ -1324,13 +1334,17 @@ body.explainer-mode {
   .ex-stat-val { font-size: 14px; }
   .ex-pipeline { gap: 2px; }
   .ex-pipe-arrow { display: none; }
-  /* Persistent puzzle strip: shrink target + equation so it stays on one line. */
-  .ex-mini-target { min-width: 62px; padding: 6px 8px; }
-  .ex-mini-target-val { font-size: 24px; }
-  .ex-mini-label { font-size: 9px; letter-spacing: 0.5px; }
-  .ex-mini-template { font-size: 14px; gap: 2px; padding: 5px 6px; }
+  /* Persistent puzzle strip: shrink the target block (its "TARGET" label,
+     not the wide min-width, is all that's needed) and trim the strip's own
+     padding so the equation row and the bank each stay on ONE line instead
+     of wrapping mid-expression. */
+  .ex-puzzle-strip { padding: 8px 10px; }
+  .ex-mini-target { min-width: 40px; padding: 6px 6px; }
+  .ex-mini-target-val { font-size: 20px; }
+  .ex-mini-label { font-size: 8px; letter-spacing: 0.3px; }
+  .ex-mini-template { font-size: 14px; gap: 1px; padding: 5px 6px; }
   .ex-tok { padding: 0 1px; }
-  .ex-mini-slot { min-width: 22px; height: 24px; font-size: 12px; letter-spacing: 0; }
-  .ex-mini-bank { gap: 4px; padding: 5px 6px; }
-  .ex-mini-chip { min-width: 22px; height: 24px; font-size: 12px; padding: 0 5px; }
+  .ex-mini-slot { min-width: 20px; height: 24px; font-size: 12px; letter-spacing: 0; }
+  .ex-mini-bank { gap: 3px; padding: 5px 6px; }
+  .ex-mini-chip { min-width: 20px; height: 24px; font-size: 12px; padding: 0 4px; }
 }
