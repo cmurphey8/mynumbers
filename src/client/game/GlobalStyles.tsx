@@ -1,9 +1,36 @@
 import { Global, css } from "@emotion/react"
 
 const globalCss = css`
+  /* ──────────────────────────────────────────────────────────────────────
+     Brand tokens (MIT design system). These do not vary by size tier, so
+     they live on :root rather than in the [data-am-size] blocks below.
+     ────────────────────────────────────────────────────────────────────── */
+  :root {
+    --am-font: "Neue Haas Grotesk Text Pro", system-ui, -apple-system,
+      "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --am-mit-red: #750014;
+    --am-red: #a31f34;
+    --am-white: #ffffff;
+    --am-text-primary: #212326;
+    --am-text-secondary: #626a73;
+    --am-light-gray-0: #f7f7f7;
+    --am-light-gray-1: #f3f4f8;
+    --am-light-gray-2: #dde1e6;
+    --am-light-silver-gray: #b8c2cc;
+    --am-green: #008000;
+    --am-dark-green: #004d1a;
+
+    --am-radius: 4px;
+    --am-card-shadow: 0 8px 10px rgba(120, 147, 172, 0.1);
+    --am-btn-shadow: 0 2px 4px rgba(37, 38, 43, 0.1),
+      0 3px 8px rgba(37, 38, 43, 0.12);
+    --am-modal-shadow: 0 4px 8px rgba(19, 20, 21, 0.08);
+  }
+
   body {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    background: #e8e8e8;
+    font-family: var(--am-font);
+    background: var(--am-light-gray-1);
     margin: 0;
     padding: 10px;
   }
@@ -15,105 +42,85 @@ const globalCss = css`
      All tiers are tuned to fit within 100vh − 200px of host chrome.
      ────────────────────────────────────────────────────────────────────── */
   [data-am-size="large"] {
-    --am-container-max: 720px;
-    --am-container-pad: 16px;
+    --am-container-max: 1188px;
     --am-container-margin: 16px;
-    --am-tile: 44px;
-    --am-tile-font: 18px;
-    --am-tile-pad: 12px;
-    --am-token-font: 18px;
-    --am-gap: 8px;
-    --am-area-pad: 8px;
-    --am-area-min-h: 50px;
-    --am-template-gap: 16px;
-    --am-logo-w: min(520px, 84vw);
-    --am-stat-large: 28px;
-    --am-stat: 19px;
-    --am-stat-label: 11px;
-    --am-board-h: clamp(120px, 18vw, 185px);
-    --am-board-mb: 14px;
-    --am-btn-pad: 9px 14px;
-    --am-btn-font: 15px;
+    --am-page-pad: 24px;
+    --am-col-gap: 32px;
+    --am-sidebar-w: 344px;
+
+    --am-board-pad-y: 64px;
+    --am-board-pad-x: 40px;
+    --am-board-gap: 32px;
+    --am-title-gap: 32px;
+
+    --am-eq-gap: 16px;
+    --am-eq-font: 18px;
+    --am-slot-px: 32px;
+    --am-slot-py: 16px;
+    --am-target: 60px;
+
+    --am-tile: 48px;
+    --am-tile-px: 24px;
+    --am-tile-font: 16px;
+    --am-bank-gap: 24px;
+
+    --am-controls-pad: 24px;
+    --am-mode-btn-w: 200px;
   }
 
   [data-am-size="medium"] {
-    --am-container-max: 720px;
-    --am-container-pad: 14px;
+    --am-container-max: 980px;
     --am-container-margin: 14px;
-    --am-tile: 38px;
-    --am-tile-font: 16px;
-    --am-tile-pad: 10px;
-    --am-token-font: 16px;
-    --am-gap: 7px;
-    --am-area-pad: 8px;
-    --am-area-min-h: 48px;
-    --am-template-gap: 20px;
-    --am-logo-w: min(480px, 88vw);
-    --am-stat-large: 28px;
-    --am-stat: 19px;
-    --am-stat-label: 10px;
-    --am-board-h: clamp(140px, 24vw, 220px);
-    --am-board-mb: 20px;
-    --am-btn-pad: 9px 12px;
-    --am-btn-font: 14px;
+    --am-page-pad: 16px;
+    --am-col-gap: 24px;
+    --am-sidebar-w: 280px;
+
+    --am-board-pad-y: 40px;
+    --am-board-pad-x: 32px;
+    --am-board-gap: 24px;
+    --am-title-gap: 24px;
+
+    --am-eq-gap: 12px;
+    --am-eq-font: 16px;
+    --am-slot-px: 24px;
+    --am-slot-py: 14px;
+    --am-target: 54px;
+
+    --am-tile: 44px;
+    --am-tile-px: 18px;
+    --am-tile-font: 15px;
+    --am-bank-gap: 16px;
+
+    --am-controls-pad: 20px;
+    --am-mode-btn-w: 170px;
   }
 
   [data-am-size="small"] {
     --am-container-max: 100%;
-    --am-container-pad: 10px;
     --am-container-margin: 6px;
-    --am-tile: 32px;
+    --am-page-pad: 8px;
+    --am-col-gap: 16px;
+    --am-sidebar-w: 100%;
+
+    --am-board-pad-y: 24px;
+    --am-board-pad-x: 16px;
+    --am-board-gap: 20px;
+    --am-title-gap: 16px;
+
+    --am-eq-gap: 8px;
+    --am-eq-font: 15px;
+    --am-slot-px: 14px;
+    --am-slot-py: 10px;
+    --am-target: 46px;
+
+    --am-tile: 38px;
+    --am-tile-px: 12px;
     --am-tile-font: 14px;
-    --am-tile-pad: 6px;
-    --am-token-font: 14px;
-    --am-gap: 5px;
-    --am-area-pad: 6px;
-    --am-area-min-h: 44px;
-    --am-template-gap: 14px;
-    --am-logo-w: min(360px, 90vw);
-    --am-stat-large: 24px;
-    --am-stat: 16px;
-    --am-stat-label: 9px;
-    --am-board-h: clamp(120px, 34vw, 180px);
-    --am-board-mb: 14px;
-    --am-btn-pad: 8px 10px;
-    --am-btn-font: 13px;
-  }
+    --am-bank-gap: 10px;
 
-  @keyframes lb-write-in-eq {
-    0%   { clip-path: inset(0 100% 0 0); }
-    100% { clip-path: inset(0 -40px 0 0); }
-  }
-
-  @keyframes lb-write-in {
-    0%   { clip-path: inset(0 100% 0 0); }
-    100% { clip-path: inset(0 0% 0 0); }
-  }
-
-  .home-lb-surface {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-    overflow: visible;
-  }
-
-  .home-lb-item {
-    position: absolute;
-    white-space: nowrap;
-    line-height: 1;
-    padding: 0.4em 12px 0.3em 0;
-    clip-path: inset(0 100% 0 0);
-    animation: lb-write-in 2.5s cubic-bezier(0.4, 0, 0.2, 1) both;
-  }
-
-  .home-lb-canvas {
-    position: absolute;
-    inset: 0;
-    z-index: 4;
-    pointer-events: none;
+    --am-controls-pad: 16px;
+    --am-mode-btn-w: 100%;
   }
 `
 
 export const GlobalStyles = () => <Global styles={globalCss} />
-

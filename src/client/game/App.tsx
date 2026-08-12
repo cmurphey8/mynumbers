@@ -1,193 +1,139 @@
 import { useEffect, useRef } from "react"
-import { Link, useSyncWithHistory, appendSegment } from "./router"
 import styled from "@emotion/styled"
-import { useGameState, useGameDispatch } from "./context/GameContext"
-import { Logo } from "./components/Logo"
-import { ModeSelector } from "./components/ModeSelector"
-import { RushStats, PracticeStats } from "./components/Stats"
+import { useGameState } from "./context/GameContext"
+import { GameHeader } from "./components/GameHeader"
 import { TemplateArea } from "./components/TemplateArea"
 import { Bank } from "./components/Bank"
 import { Controls } from "./components/Controls"
-import { Result } from "./components/Result"
-import { Lightboard, HomeLightboard } from "./components/Lightboard"
-import { RushReadyModal, GameOverModal } from "./components/Modals"
+import { HowToPlay } from "./components/HowToPlay"
+import { GameOverModal } from "./components/Modals"
 import { Countdown } from "./components/Countdown"
 import { useTimer } from "./hooks/useTimer"
 import { useGameActions } from "./hooks/useGameActions"
 import { useGameSize } from "./hooks/useGameSize"
 
+const Page = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--am-page-pad);
+  box-sizing: border-box;
+`
+
+/** Board on the left, "How to play" on the right; stacked on small screens. */
 const Container = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--am-col-gap);
+  width: 100%;
   max-width: var(--am-container-max);
   margin: var(--am-container-margin) auto;
-  padding: var(--am-container-pad);
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
-`
 
-const HowToPlay = styled.div`
-  margin: 10px 0 4px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #f5f5f5;
-  border-left: 3px solid #750014;
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.5;
-`
-
-const ExplainerLinkRow = styled.div`
-  display: none;
-  text-align: center;
-  margin: 16px 0;
-
-  .menu-mode & {
-    display: block;
+  [data-am-size="small"] & {
+    flex-direction: column;
   }
 `
 
-const explainerLinkCss = `
-  display: inline-block;
-  padding: clamp(10px, 1.1vw, 16px) clamp(20px, 2.4vw, 36px);
-  border: 2px solid #fff;
-  border-radius: 8px;
-  background: #dde1e6;
-  font-family: 'Fredoka One', system-ui, sans-serif;
-  font-size: clamp(16px, 1.4vw, 22px);
-  letter-spacing: 0.5px;
-  color: #000;
-  text-decoration: none;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 150ms, transform 100ms;
-
-  span {
-    color: #750014;
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
+const Left = styled.div`
+  display: flex;
+  flex: 1 0 0;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
 `
 
-const ExplainerLink = styled(Link)`${explainerLinkCss}`
-const ExplainerAnchor = styled.a`${explainerLinkCss}`
+const Sidebar = styled.div`
+  display: flex;
+  flex: none;
+  width: var(--am-sidebar-w);
+`
+
+/** Positioning context for the countdown, which sits over the board. */
+const BoardWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`
+
+const Board = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--am-board-gap);
+  width: 100%;
+  padding: var(--am-board-pad-y) var(--am-board-pad-x);
+  box-sizing: border-box;
+  border-radius: var(--am-radius) var(--am-radius) 0 0;
+  background: var(--am-white);
+  box-shadow: var(--am-card-shadow);
+`
 
 export function App() {
   const state = useGameState()
-  const dispatch = useGameDispatch()
-  const syncWithHistory = useSyncWithHistory()
   useTimer()
   const size = useGameSize()
-  const {
-    generatePuzzle,
-    checkPuzzle,
-    endRush,
-    startCountdown,
-    handleRushReady,
-    playAgain,
-    resetEquations,
-    equations,
-  } = useGameActions()
+  const { generatePuzzle, checkPuzzle, startCountdown, playAgain } = useGameActions()
 
-  const isRush = state.mode === "rush3" || state.mode === "rush5"
   const prevSlotValuesRef = useRef(state.slotValues)
 
-  // Generate puzzle when mode starts
+  // Generate a puzzle whenever a mode is active but has none — on entering a
+  // mode, and again after switching or restarting (both clear the puzzle).
+  // The ref keeps a failed generation from retrying in a loop; it clears as
+  // soon as a puzzle lands.
   const hasGenerated = useRef(false)
   useEffect(() => {
     if (state.mode && !state.puzzle && !hasGenerated.current) {
       hasGenerated.current = true
       generatePuzzle()
     }
-    if (!state.mode) {
+    if (state.puzzle || !state.mode) {
       hasGenerated.current = false
     }
   }, [state.mode, state.puzzle, generatePuzzle])
-
-  // Clear lightboard equations at the start of each rush game
-  useEffect(() => {
-    if (isRush && !state.rushStarted && state.puzzlesSolved === 0) {
-      resetEquations()
-    }
-  }, [isRush, state.rushStarted, state.puzzlesSolved, resetEquations])
 
   // Auto-check when all slots are filled
   useEffect(() => {
     if (prevSlotValuesRef.current !== state.slotValues) {
       prevSlotValuesRef.current = state.slotValues
       const allFilled = state.slotValues.length > 0 && state.slotValues.every(v => v !== null)
-      if (allFilled && !state.rushIntroPlaying) {
+      if (allFilled && !state.showCountdown) {
         checkPuzzle()
       }
     }
-  }, [state.slotValues, state.rushIntroPlaying, checkPuzzle])
+  }, [state.slotValues, state.showCountdown, checkPuzzle])
 
-  // Handle rush intro → show ready modal immediately
+  // START_RUSH raises showCountdown, which is the single trigger for the
+  // countdown overlay; running it from the flag rather than from the click
+  // keeps every entry point (mode buttons, Play Again) on the same path. The
+  // cleanup cancels a countdown that is torn down early, e.g. by Restart.
   useEffect(() => {
-    if (isRush && state.rushIntroPlaying && !state.rushStarted) {
-      dispatch({ type: "SHOW_RUSH_READY_MODAL" })
-      dispatch({ type: "SET_RUSH_INTRO_PLAYING", playing: false })
-    }
-  }, [isRush, state.rushIntroPlaying, state.rushStarted, dispatch])
-
-  // Handle rush start with skip intro
-  useEffect(() => {
-    if (isRush && !state.rushIntroPlaying && !state.rushStarted && !state.showRushReadyModal) {
-      startCountdown()
-    }
-  }, [isRush, state.rushIntroPlaying, state.rushStarted, state.showRushReadyModal, startCountdown])
-
-  if (state.showMenu) {
-    return (
-      <Container className="menu-mode" data-am-size={size}>
-        <Logo />
-        <ModeSelector />
-        <TemplateArea />
-        <ExplainerLinkRow>
-          {syncWithHistory ? (
-            <ExplainerLink to="/explainer">
-              Inside <span>ARITHMIX</span>
-            </ExplainerLink>
-          ) : (
-            <ExplainerAnchor href={appendSegment(window.location.pathname, "explainer")}>
-              Inside <span>ARITHMIX</span>
-            </ExplainerAnchor>
-          )}
-        </ExplainerLinkRow>
-        <HomeLightboard />
-      </Container>
-    )
-  }
-
-  const modalOpen = state.showRushReadyModal || state.showGameOverModal
+    if (!state.showCountdown) return
+    return startCountdown()
+  }, [state.showCountdown, startCountdown])
 
   return (
-    <Container data-am-size={size}>
-      <div inert={modalOpen ? true : undefined}>
-        <Logo />
+    <Page data-am-size={size}>
+      <Container inert={state.showGameOverModal ? true : undefined}>
+        <Left>
+          <BoardWrapper>
+            {/* Locked while the countdown runs: no tiles move before "GO!". */}
+            <Board inert={state.showCountdown ? true : undefined}>
+              <GameHeader />
+              <TemplateArea />
+              <Bank />
+            </Board>
+            <Countdown />
+          </BoardWrapper>
 
-        {isRush && <RushStats />}
-        {state.mode === "practice" && <PracticeStats />}
+          <Controls />
+        </Left>
 
-        {state.mode === "practice" && (
-          <HowToPlay>
-            <strong>How to play:</strong> Drag (or tap) numbers from the bank into
-            the empty slots to make the equation equal the <strong>Target</strong>.
-          </HowToPlay>
-        )}
+        <Sidebar>
+          <HowToPlay />
+        </Sidebar>
+      </Container>
 
-        <TemplateArea />
-        <Bank />
-        <Controls onNewPuzzle={generatePuzzle} onEndRush={endRush} />
-        <Result />
-
-        {isRush && <Lightboard equations={equations} />}
-      </div>
-
-      <RushReadyModal onStart={handleRushReady} />
       <GameOverModal onPlayAgain={playAgain} />
-      <Countdown />
-    </Container>
+    </Page>
   )
 }

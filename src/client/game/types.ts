@@ -12,16 +12,16 @@ export interface GameState {
   mode: GameMode
   puzzle: Puzzle | null
   puzzlesSolved: number
+  /** Whether the puzzle on screen has already been counted toward the score. */
+  puzzleSolved: boolean
   timeRemaining: number
   currentDifficulty: number
   maxDifficultyReached: number
+  /** True once the countdown has handed over and the clock is running. */
   rushStarted: boolean
-  rushIntroPlaying: boolean
   slotValues: (number | null)[]
   bankItems: BankItem[]
   result: { text: string; type: "success" | "error" | "" } | null
-  showMenu: boolean
-  showRushReadyModal: boolean
   showGameOverModal: boolean
   showCountdown: boolean
   countdownNumber: number | string
@@ -34,9 +34,8 @@ export interface BankItem {
 }
 
 export type GameAction =
-  | { type: "SHOW_MENU" }
   | { type: "START_PRACTICE" }
-  | { type: "START_RUSH"; minutes: number; skipIntro?: boolean }
+  | { type: "START_RUSH"; minutes: number }
   | { type: "SET_PUZZLE"; puzzle: Puzzle; bankItems: BankItem[] }
   | { type: "PLACE_TILE"; tileId: string; slotIndex: number }
   | { type: "REMOVE_TILE"; slotIndex: number }
@@ -45,12 +44,8 @@ export type GameAction =
   | { type: "TICK_TIMER" }
   | { type: "END_RUSH" }
   | { type: "SET_RUSH_STARTED"; started: boolean }
-  | { type: "SET_RUSH_INTRO_PLAYING"; playing: boolean }
-  | { type: "SHOW_RUSH_READY_MODAL" }
-  | { type: "HIDE_RUSH_READY_MODAL" }
   | { type: "SHOW_GAME_OVER_MODAL" }
   | { type: "HIDE_GAME_OVER_MODAL" }
-  | { type: "SHOW_COUNTDOWN" }
   | { type: "SET_COUNTDOWN_NUMBER"; value: number | string }
   | { type: "HIDE_COUNTDOWN" }
   | { type: "INCREMENT_SOLVED" }

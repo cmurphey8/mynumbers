@@ -44,8 +44,10 @@ export function StateProbe(): ReactElement {
     <div
       data-testid="state-probe"
       data-mode={String(state.mode)}
-      data-show-menu={String(state.showMenu)}
       data-time-remaining={String(state.timeRemaining)}
+      data-rush-started={String(state.rushStarted)}
+      data-game-over={String(state.showGameOverModal)}
+      data-puzzles-solved={String(state.puzzlesSolved)}
     />
   )
 }

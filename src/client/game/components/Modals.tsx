@@ -2,134 +2,125 @@ import { createPortal } from "react-dom"
 import { useEffect, useRef, type ReactNode } from "react"
 import styled from "@emotion/styled"
 import { useGameState, useGameDispatch } from "../context/GameContext"
-import timWaveUrl from "../assets/tim-wave.svg"
-import timFrontUrl from "../assets/tim-front.svg"
+import type { GameAction, GameMode } from "../types"
+import { PrimaryButton, OutlineButtonL } from "./ui"
+import { Icon } from "./Icon"
+import closeIconUrl from "../assets/icon-close.svg"
+import timFullUrl from "../assets/tim-full.svg"
 
 const Overlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  padding: 20px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.4);
 `
 
-const Box = styled.div`
-  position: relative;
-  z-index: 0;
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-
-  h2 {
-    margin: 0 0 24px;
-    text-align: center;
-    font-size: 28px;
-  }
-
-  @media (max-width: 600px) {
-    padding: 20px;
-  }
-`
-
-const CloseBtn = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: none;
-  border: none;
-  font-size: 20px;
-  line-height: 1;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-
-  &:hover {
-    color: #374151;
-    background: #f3f4f6;
-  }
-`
-
-const TimImg = styled.img`
-  display: block;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 12px;
-  object-fit: contain;
-`
-
-const ModalStats = styled.div`
+const Card = styled.div`
   display: flex;
+  flex-direction: column;
+  width: 516px;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--am-white);
+  box-shadow: var(--am-modal-shadow);
+`
+
+const TitleBar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
-
-  @media (max-width: 600px) {
-    gap: 8px;
-  }
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--am-light-gray-2);
+  background: var(--am-light-gray-1);
 `
 
-const ModalStat = styled.div`
-  flex: 1;
-  text-align: center;
-  padding: 16px;
-  background: #f3f4f6;
-  border-radius: 8px;
-`
-
-const ModalStatValue = styled.div`
-  font-size: 32px;
+const Title = styled.h2`
+  flex: 1 0 0;
+  min-width: 0;
+  margin: 0;
+  color: #000;
+  font-size: 18px;
   font-weight: 700;
-  color: #A31F34;
-  margin-bottom: 4px;
-
-  @media (max-width: 600px) {
-    font-size: 24px;
-  }
+  line-height: 26px;
 `
 
-const ModalStatLabel = styled.div`
-  font-size: 12px;
-  color: #6b7280;
-  text-transform: uppercase;
-  font-weight: 600;
-`
-
-const Desc = styled.p`
-  text-align: center;
-  color: #374151;
-  margin: 0 0 20px;
-  line-height: 1.5;
-  font-size: 15px;
-`
-
-const Buttons = styled.div`
-  display: flex;
-  gap: 12px;
-`
-
-const ModalBtn = styled.button<{ $primary?: boolean }>`
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
+const CloseButton = styled.button`
+  display: block;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
-  transition: transform 100ms;
-  background: ${p => p.$primary ? "#750014" : "#e5e7eb"};
-  color: ${p => p.$primary ? "white" : "#374151"};
+  border-radius: var(--am-radius);
 
-  &:active {
-    transform: scale(0.98);
+  &:focus-visible {
+    outline: 2px solid var(--am-text-primary);
+    outline-offset: 2px;
   }
+`
+
+const Content = styled.div`
+  padding: 28px;
+`
+
+const CtaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 0 28px 28px;
+`
+
+const ScoreRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+`
+
+const ScoreBox = styled.div`
+  flex: none;
+  width: 223px;
+  max-width: 100%;
+  padding: 32px;
+  box-sizing: border-box;
+  border: 1px solid var(--am-light-silver-gray);
+  border-radius: var(--am-radius);
+  color: var(--am-text-primary);
+  text-align: center;
+  word-break: break-word;
+`
+
+const ScoreValue = styled.div`
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 60px;
+`
+
+const ScoreLabel = styled.div`
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+`
+
+const Beaver = styled.img`
+  flex: none;
+  display: block;
+  width: 120.051px;
+  height: 160px;
+`
+
+const GrowButton = styled(PrimaryButton)`
+  flex: 1 0 0;
+  min-width: 0;
 `
 
 interface ModalsProps {
@@ -203,51 +194,34 @@ function ModalDialog({
           : undefined
       }
     >
-      <Box ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={labelledBy} tabIndex={-1}>
+      <Card ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={labelledBy} tabIndex={-1}>
         {children}
-      </Box>
+      </Card>
     </Overlay>,
     document.body,
   )
 }
 
-export function RushReadyModal({ onStart }: { onStart: () => void }) {
-  const { showRushReadyModal } = useGameState()
-  const dispatch = useGameDispatch()
+/** Every mode, in CTA order — the finished one is filtered out. */
+const MODES: { key: GameMode; label: string; start: GameAction }[] = [
+  { key: "practice", label: "Practice", start: { type: "START_PRACTICE" } },
+  { key: "rush3", label: "3-Min Rush", start: { type: "START_RUSH", minutes: 3 } },
+  { key: "rush5", label: "5-Min Rush", start: { type: "START_RUSH", minutes: 5 } },
+]
 
-  if (!showRushReadyModal) return null
-
-  return (
-    <ModalDialog labelledBy="rush-ready-title">
-      <h2 id="rush-ready-title">Ready to Rush?</h2>
-      <Desc>
-        Arrange the numbers to hit the <strong>Target</strong>. Solve as many
-        puzzles as you can before time runs out!
-      </Desc>
-      <Buttons>
-        <ModalBtn
-          $primary
-          onClick={() => {
-            dispatch({ type: "HIDE_RUSH_READY_MODAL" })
-            onStart()
-          }}
-        >
-          Let&apos;s Go!
-        </ModalBtn>
-      </Buttons>
-    </ModalDialog>
-  )
-}
-
+/**
+ * The session summary, shown when a rush timer expires and when Restart ends
+ * the current session. Titled for the mode that just finished; offers a replay
+ * of it plus the two modes not just played.
+ */
 export function GameOverModal({ onPlayAgain }: ModalsProps) {
-  const { showGameOverModal, puzzlesSolved } = useGameState()
+  const { showGameOverModal, puzzlesSolved, mode } = useGameState()
   const dispatch = useGameDispatch()
 
   if (!showGameOverModal) return null
 
-  const timSrc = puzzlesSolved >= 5
-    ? timWaveUrl
-    : timFrontUrl
+  const title = mode === "practice" ? "Practice Complete!" : "Rush Complete!"
+  const otherModes = MODES.filter(m => m.key !== mode)
 
   function handleDismiss() {
     dispatch({ type: "HIDE_GAME_OVER_MODAL" })
@@ -255,25 +229,31 @@ export function GameOverModal({ onPlayAgain }: ModalsProps) {
 
   return (
     <ModalDialog labelledBy="game-over-title" onDismiss={handleDismiss} dismissOnBackdrop>
-      <CloseBtn aria-label="Close" onClick={handleDismiss}>
-        &#x2715;
-      </CloseBtn>
-      <TimImg src={timSrc} alt="Tim" />
-      <h2 id="game-over-title">Rush Complete!</h2>
-      <ModalStats>
-        <ModalStat>
-          <ModalStatValue>{puzzlesSolved}</ModalStatValue>
-          <ModalStatLabel>Puzzles Solved</ModalStatLabel>
-        </ModalStat>
-      </ModalStats>
-      <Buttons>
-        <ModalBtn $primary onClick={onPlayAgain}>
+      <TitleBar>
+        <Title id="game-over-title">{title}</Title>
+        <CloseButton type="button" aria-label="Close" onClick={handleDismiss}>
+          <Icon src={closeIconUrl} size={24} inset="23.49% 23.48% 23.48% 23.48%" />
+        </CloseButton>
+      </TitleBar>
+      <Content>
+        <ScoreRow>
+          <ScoreBox>
+            <ScoreValue>{puzzlesSolved}</ScoreValue>
+            <ScoreLabel>Final Score</ScoreLabel>
+          </ScoreBox>
+          <Beaver src={timFullUrl} alt="Tim the Beaver" />
+        </ScoreRow>
+      </Content>
+      <CtaRow>
+        <GrowButton type="button" onClick={onPlayAgain}>
           Play Again
-        </ModalBtn>
-        <ModalBtn onClick={() => dispatch({ type: "SHOW_MENU" })}>
-          Back to Menu
-        </ModalBtn>
-      </Buttons>
+        </GrowButton>
+        {otherModes.map(m => (
+          <OutlineButtonL key={m.label} type="button" onClick={() => dispatch(m.start)}>
+            {m.label}
+          </OutlineButtonL>
+        ))}
+      </CtaRow>
     </ModalDialog>
   )
 }

@@ -1,22 +1,20 @@
 import styled from "@emotion/styled"
 import { useGameState } from "../context/GameContext"
 
+// Always mounted so the live region exists before a message lands in it; with
+// no message it collapses to zero height rather than reserving a blank line.
 const ResultMessage = styled.div<{ $type?: string }>`
-  margin-top: 12px;
-  min-height: 1.4em;
+  width: 100%;
   text-align: center;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  word-break: break-word;
   color: ${p =>
-    p.$type === "success" ? "#065f46" :
-    p.$type === "error" ? "#7f1d1d" :
-    p.$type === "reveal" ? "#0b5" :
-    "inherit"
+    p.$type === "success" ? "var(--am-green)" :
+    p.$type === "error" ? "var(--am-mit-red)" :
+    "var(--am-text-primary)"
   };
-
-  @media (max-width: 600px) {
-    margin-top: 8px;
-    font-size: 13px;
-  }
 `
 
 export function Result() {
