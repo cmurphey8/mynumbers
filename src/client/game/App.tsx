@@ -12,14 +12,7 @@ import { useTimer } from "./hooks/useTimer"
 import { useGameActions } from "./hooks/useGameActions"
 import { useGameSize } from "./hooks/useGameSize"
 
-/**
- * The game's outermost element, and the positioning context its overlays are
- * scoped to: the countdown and the session-complete dialog cover the game
- * rather than the host page, so they read as part of the game and leave the
- * surrounding site usable.
- */
 const Page = styled.div`
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -41,7 +34,15 @@ const Container = styled.div`
   }
 `
 
+/**
+ * The game frame — the board card and the controls bar joined to it — and the
+ * positioning context the session-complete dialog is measured against, so the
+ * dialog stays inside the game instead of covering the page hosting it. It is
+ * the frame rather than the board alone because at the smallest tier the board
+ * is shorter than the dialog.
+ */
 const Left = styled.div`
+  position: relative;
   display: flex;
   flex: 1 0 0;
   flex-direction: column;
@@ -55,9 +56,14 @@ const Sidebar = styled.div`
   width: var(--am-sidebar-w);
 `
 
-/** Positioning context for the countdown, which sits over the board. */
+/** Positioning context for the countdown, which covers the board only. */
 const BoardWrapper = styled.div`
   position: relative;
+  width: 100%;
+`
+
+/** Wrapper so the controls under the dialog's scrim can be made inert. */
+const ControlsSlot = styled.div`
   width: 100%;
 `
 
@@ -118,13 +124,16 @@ export function App() {
     return startCountdown()
   }, [state.showCountdown, startCountdown])
 
+  // Whichever overlay is up covers the board, so the board beneath it is
+  // locked: no tiles move before "GO!", and none after the session ends.
+  const boardCovered = state.showCountdown || state.showGameOverModal
+
   return (
     <Page data-am-size={size}>
-      <Container inert={state.showGameOverModal ? true : undefined}>
+      <Container>
         <Left>
           <BoardWrapper>
-            {/* Locked while the countdown runs: no tiles move before "GO!". */}
-            <Board inert={state.showCountdown ? true : undefined}>
+            <Board inert={boardCovered ? true : undefined}>
               <GameHeader />
               <TemplateArea />
               <Bank />
@@ -132,15 +141,17 @@ export function App() {
             <Countdown />
           </BoardWrapper>
 
-          <Controls />
+          <ControlsSlot inert={state.showGameOverModal ? true : undefined}>
+            <Controls />
+          </ControlsSlot>
+
+          <GameOverModal onPlayAgain={playAgain} />
         </Left>
 
         <Sidebar>
           <HowToPlay />
         </Sidebar>
       </Container>
-
-      <GameOverModal onPlayAgain={playAgain} />
     </Page>
   )
 }

@@ -8,31 +8,44 @@ import closeIconUrl from "../assets/icon-close.svg"
 import timFullUrl from "../assets/tim-full.svg"
 
 /**
- * Fills the game's root element rather than the viewport, so the dialog dims
- * the game and not the page hosting it. Sits above the countdown's z-index.
+ * Fills the game frame rather than the viewport, so the dialog dims the game
+ * and nothing else — it belongs to the game, not to the page hosting it. Sits
+ * above the countdown, which covers the board within the same frame.
  */
 const Overlay = styled.div`
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 20;
+  box-sizing: border-box;
   padding: 8px;
+  overflow: auto;
+  border-radius: var(--am-radius);
   background: rgba(0, 0, 0, 0.4);
 `
 
+/**
+ * `margin: auto` centres the card in the frame while leaving it fully
+ * reachable when the frame is shorter than the card — flex centring would clip
+ * the overflowing edge instead of letting the frame scroll to it.
+ */
 const Card = styled.div`
   display: flex;
   flex-direction: column;
+  margin: auto;
   width: 516px;
   max-width: 100%;
-  max-height: 100%;
-  overflow: auto;
   border-radius: 8px;
   background: var(--am-white);
   box-shadow: var(--am-modal-shadow);
 `
+
+/**
+ * Below the large tier the board frame is shorter than the card's designed
+ * height, so its spacing and figures tighten up to keep the whole dialog inside
+ * the frame.
+ */
+const COMPACT = '[data-am-size="medium"] &, [data-am-size="small"] &'
 
 const TitleBar = styled.div`
   display: flex;
@@ -42,6 +55,10 @@ const TitleBar = styled.div`
   padding: 20px 28px;
   border-bottom: 1px solid var(--am-light-gray-2);
   background: var(--am-light-gray-1);
+
+  ${COMPACT} {
+    padding: 14px 20px;
+  }
 `
 
 const Title = styled.h2`
@@ -71,6 +88,10 @@ const CloseButton = styled.button`
 
 const Content = styled.div`
   padding: 28px;
+
+  ${COMPACT} {
+    padding: 16px 20px;
+  }
 `
 
 const CtaRow = styled.div`
@@ -80,6 +101,11 @@ const CtaRow = styled.div`
   justify-content: flex-end;
   gap: 16px;
   padding: 0 28px 28px;
+
+  ${COMPACT} {
+    gap: 12px;
+    padding: 0 20px 20px;
+  }
 `
 
 const ScoreRow = styled.div`
@@ -87,6 +113,10 @@ const ScoreRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+
+  ${COMPACT} {
+    gap: 16px;
+  }
 `
 
 const ScoreBox = styled.div`
@@ -100,12 +130,22 @@ const ScoreBox = styled.div`
   color: var(--am-text-primary);
   text-align: center;
   word-break: break-word;
+
+  ${COMPACT} {
+    width: 180px;
+    padding: 16px;
+  }
 `
 
 const ScoreValue = styled.div`
   font-size: 52px;
   font-weight: 700;
   line-height: 60px;
+
+  ${COMPACT} {
+    font-size: 40px;
+    line-height: 48px;
+  }
 `
 
 const ScoreLabel = styled.div`
@@ -119,10 +159,19 @@ const Beaver = styled.img`
   display: block;
   width: 120.051px;
   height: 160px;
+
+  ${COMPACT} {
+    width: 84.036px;
+    height: 112px;
+  }
 `
 
+/**
+ * Fills the leftover space on a row it shares, but sized from its content so a
+ * row too narrow for all three CTAs wraps instead of overflowing the card.
+ */
 const GrowButton = styled(PrimaryButton)`
-  flex: 1 0 0;
+  flex: 1 1 auto;
   min-width: 0;
 `
 
