@@ -1,4 +1,3 @@
-import { createPortal } from "react-dom"
 import { useEffect, useRef, type ReactNode } from "react"
 import styled from "@emotion/styled"
 import { useGameState, useGameDispatch } from "../context/GameContext"
@@ -8,13 +7,17 @@ import { Icon } from "./Icon"
 import closeIconUrl from "../assets/icon-close.svg"
 import timFullUrl from "../assets/tim-full.svg"
 
+/**
+ * Fills the game's root element rather than the viewport, so the dialog dims
+ * the game and not the page hosting it. Sits above the countdown's z-index.
+ */
 const Overlay = styled.div`
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 20;
   padding: 8px;
   background: rgba(0, 0, 0, 0.4);
 `
@@ -184,7 +187,9 @@ function ModalDialog({
     }
   }, [onDismiss])
 
-  return createPortal(
+  // Rendered in place rather than portalled to document.body: the dialog
+  // belongs to the game, so it must stay inside the game's own bounds.
+  return (
     <Overlay
       onClick={
         dismissOnBackdrop && onDismiss
@@ -197,8 +202,7 @@ function ModalDialog({
       <Card ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={labelledBy} tabIndex={-1}>
         {children}
       </Card>
-    </Overlay>,
-    document.body,
+    </Overlay>
   )
 }
 

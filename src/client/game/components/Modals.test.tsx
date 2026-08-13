@@ -11,6 +11,13 @@ describe("GameOverModal", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 
+  it("stays inside the game rather than portalling to the page", () => {
+    const { container } = renderWithGame(<GameOverModal onPlayAgain={vi.fn()} />, {
+      actions: [{ type: "START_PRACTICE" }, { type: "SHOW_GAME_OVER_MODAL" }],
+    })
+    expect(container).toContainElement(screen.getByRole("dialog"))
+  })
+
   it("titles itself for practice and offers both rush lengths", () => {
     renderWithGame(<GameOverModal onPlayAgain={vi.fn()} />, {
       actions: [{ type: "START_PRACTICE" }, { type: "SHOW_GAME_OVER_MODAL" }],

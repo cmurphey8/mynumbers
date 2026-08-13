@@ -12,7 +12,14 @@ import { useTimer } from "./hooks/useTimer"
 import { useGameActions } from "./hooks/useGameActions"
 import { useGameSize } from "./hooks/useGameSize"
 
+/**
+ * The game's outermost element, and the positioning context its overlays are
+ * scoped to: the countdown and the session-complete dialog cover the game
+ * rather than the host page, so they read as part of the game and leave the
+ * surrounding site usable.
+ */
 const Page = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
