@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import styled from "@emotion/styled"
-import { useGameState } from "./context/GameContext"
+import { useGameState, isSessionOver } from "./context/GameContext"
 import { GameHeader } from "./components/GameHeader"
 import { TemplateArea } from "./components/TemplateArea"
 import { Bank } from "./components/Bank"
@@ -121,9 +121,10 @@ export function App() {
     return startCountdown()
   }, [state.showCountdown, startCountdown])
 
-  // Whichever overlay is up covers the board, so the board beneath it is
-  // locked: no tiles move before "GO!", and none after the session ends.
-  const boardCovered = state.showCountdown || state.showGameOverModal
+  // The board is locked while an overlay covers it — no tiles move before
+  // "GO!" — and stays locked once the session is over, including while its
+  // summary is dismissed to look the final board over.
+  const boardCovered = state.showCountdown || isSessionOver(state)
 
   return (
     <Page data-am-size={size}>

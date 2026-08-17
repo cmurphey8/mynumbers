@@ -118,6 +118,19 @@ describe("useGameActions", () => {
     expect(bankId()).toBe("t0")
   })
 
+  it("does not resume the advance when an ended rush's summary is dismissed", () => {
+    const { solve, dispatch, bankId } = renderHarness({ type: "START_RUSH", minutes: 3 })
+
+    solve()
+    dispatch({ type: "END_RUSH" })
+    dispatch({ type: "HIDE_GAME_OVER_MODAL" })
+    act(() => {
+      vi.advanceTimersByTime(900)
+    })
+
+    expect(bankId()).toBe("t0")
+  })
+
   it("drops a pending advance when the mode changes", () => {
     const { solve, dispatch, bankId } = renderHarness({ type: "START_PRACTICE" })
 

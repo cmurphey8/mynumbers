@@ -16,6 +16,21 @@ export function calculateDifficulty(solved: number): number {
   return 12
 }
 
+/**
+ * Whether the session on the board can still be played on.
+ *
+ * A rush is over the moment its clock stops, which is not the same as its
+ * summary being on screen: the summary can be dismissed to look back at the
+ * final board, and that board must stay read-only. Otherwise the player could
+ * keep solving at 0:00 and run the score past the one the summary reported.
+ * Practice has no clock, so only its summary ends it.
+ */
+export function isSessionOver(state: GameState): boolean {
+  if (state.showGameOverModal) return true
+  const isRush = state.mode === "rush3" || state.mode === "rush5"
+  return isRush && !state.rushStarted && !state.showCountdown
+}
+
 // There is no mode-selection screen: the game opens straight into practice and
 // the controls bar switches modes from there.
 const initialState: GameState = {

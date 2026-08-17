@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { GameProvider } from "./context/GameContext"
+import { renderWithGame } from "./testUtils"
 import { App } from "./App"
 import { puzzleRush } from "./generator"
 
@@ -64,5 +65,53 @@ describe("App puzzle generation", () => {
     expect(generate).toHaveBeenCalledTimes(1)
     expect(screen.queryByText("Failed to generate puzzle.")).not.toBeInTheDocument()
     expect(screen.queryByText("Loading puzzle…")).not.toBeInTheDocument()
+  })
+})
+
+/** The board is the region holding the rush clock. */
+function lockedRegion(container: HTMLElement): Element | null {
+  return container.querySelector("[inert]")
+}
+
+describe("App board locking", () => {
+  it("leaves the board in play while a rush is running", () => {
+    const { container } = renderWithGame(<App />, {
+      actions: [
+        { type: "START_RUSH", minutes: 3 },
+        { type: "HIDE_COUNTDOWN" },
+        { type: "SET_RUSH_STARTED", started: true },
+      ],
+    })
+
+    expect(lockedRegion(container)).toBeNull()
+  })
+
+  // A dismissed summary is how the player looks the final board over; the
+  // score it reported has to still describe that board afterwards.
+  it("keeps an ended rush locked once its summary is dismissed", () => {
+    const { container } = renderWithGame(<App />, {
+      actions: [
+        { type: "START_RUSH", minutes: 3 },
+        { type: "HIDE_COUNTDOWN" },
+        { type: "SET_RUSH_STARTED", started: true },
+        { type: "END_RUSH" },
+        { type: "HIDE_GAME_OVER_MODAL" },
+      ],
+    })
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(lockedRegion(container)).toContainElement(screen.getByRole("timer"))
+  })
+
+  it("returns the board to play when a dismissed practice summary leaves it running", () => {
+    const { container } = renderWithGame(<App />, {
+      actions: [
+        { type: "START_PRACTICE" },
+        { type: "SHOW_GAME_OVER_MODAL" },
+        { type: "HIDE_GAME_OVER_MODAL" },
+      ],
+    })
+
+    expect(lockedRegion(container)).toBeNull()
   })
 })

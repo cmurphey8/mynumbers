@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef } from "react"
-import { useGameState, useGameDispatch, calculateDifficulty } from "../context/GameContext"
+import {
+  useGameState,
+  useGameDispatch,
+  calculateDifficulty,
+  isSessionOver,
+} from "../context/GameContext"
 import { puzzleRush, puzzleCheck, type PuzzleOut, type CheckResult } from "../generator"
 import type { BankItem, Puzzle } from "../types"
 
@@ -109,17 +114,18 @@ export function useGameActions() {
    * green "solved" state to register. This is an effect rather than a timeout
    * fired from the check so that the pending advance belongs to the session
    * that scheduled it: React clears it whenever that session goes away — the
-   * mode changes, the summary modal opens on a restart or an expired clock, or
-   * the game unmounts — and a puzzle built for the session being left can
-   * never land in the one being entered. Re-checking an already-solved board
-   * does not restart the pause either, since nothing it touches is a
-   * dependency here.
+   * mode changes, the session ends, or the game unmounts — and a puzzle built
+   * for the session being left can never land in the one being entered, nor
+   * replace the final board of one that has finished. Re-checking an
+   * already-solved board does not restart the pause either, since nothing it
+   * touches is a dependency here.
    */
+  const sessionOver = isSessionOver(state)
   useEffect(() => {
-    if (!state.puzzleSolved || state.showGameOverModal) return
+    if (!state.puzzleSolved || sessionOver) return
     const timer = setTimeout(generatePuzzle, 900)
     return () => clearTimeout(timer)
-  }, [state.puzzleSolved, state.showGameOverModal, generatePuzzle])
+  }, [state.puzzleSolved, sessionOver, generatePuzzle])
 
   const scheduleAutoCheck = useCallback(() => {
     if (autoCheckRef.current) {
