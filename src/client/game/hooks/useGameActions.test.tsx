@@ -1,5 +1,5 @@
 import { act, render, screen } from "@testing-library/react"
-import { useEffect, type ReactNode } from "react"
+import { useEffect, type Dispatch } from "react"
 import { GameProvider, useGameState, useGameDispatch } from "../context/GameContext"
 import { useGameActions } from "./useGameActions"
 import type { GameAction, GameMode, Puzzle } from "../types"
@@ -24,10 +24,12 @@ const BANK = [2, 3, 9].map((value, i) => ({
  * with the solution, then check — and exposes the resulting puzzle so a test
  * can tell whether a new one was handed out.
  */
-function Harness({ mode }: { mode: GameAction }) {
+function Harness({ mode, onDispatch }: { mode: GameAction; onDispatch: (d: Dispatch<GameAction>) => void }) {
   const state = useGameState()
   const dispatch = useGameDispatch()
   const { checkPuzzle } = useGameActions()
+
+  onDispatch(dispatch)
 
   useEffect(() => {
     dispatch(mode)
@@ -49,15 +51,21 @@ function Harness({ mode }: { mode: GameAction }) {
  * carries freshly minted ids, so the board having moved on is unambiguous —
  * unlike a target, which a new puzzle could repeat by chance.
  */
-function renderHarness(mode: GameAction): { solve: () => void; bankId: () => string | null } {
+function renderHarness(mode: GameAction): {
+  solve: () => void
+  dispatch: (action: GameAction) => void
+  bankId: () => string | null
+} {
+  let latest: Dispatch<GameAction> = () => {}
   render(
     <GameProvider>
-      <Harness mode={mode} />
+      <Harness mode={mode} onDispatch={d => (latest = d)} />
     </GameProvider>,
   )
   const probe = () => screen.getByTestId("probe")
   return {
     solve: () => act(() => probe().click()),
+    dispatch: action => act(() => latest(action)),
     bankId: () => probe().getAttribute("data-bank"),
   }
 }
@@ -89,5 +97,38 @@ describe("useGameActions", () => {
       vi.advanceTimersByTime(900)
     })
     expect(bankId()).not.toBe("t0")
+  })
+
+  // Restart and an expired rush clock both raise the summary modal without
+  // changing mode, so the advance has to be cancelled by the session ending
+  // rather than by the mode changing.
+  it.each<[string, GameAction]>([
+    ["a restart", { type: "SHOW_GAME_OVER_MODAL" }],
+    ["the clock expiring", { type: "END_RUSH" }],
+  ])("drops a pending advance when the session ends via %s", (_label, ending) => {
+    const { solve, dispatch, bankId } = renderHarness({ type: "START_RUSH", minutes: 3 })
+
+    solve()
+    dispatch(ending)
+    act(() => {
+      vi.advanceTimersByTime(900)
+    })
+
+    // The board behind the summary modal is the one the score refers to.
+    expect(bankId()).toBe("t0")
+  })
+
+  it("drops a pending advance when the mode changes", () => {
+    const { solve, dispatch, bankId } = renderHarness({ type: "START_PRACTICE" })
+
+    solve()
+    dispatch({ type: "START_RUSH", minutes: 3 })
+    // START_RUSH clears the board, and the puzzle for the new session comes
+    // from the app's generate-on-empty effect, not from the practice solve.
+    act(() => {
+      vi.advanceTimersByTime(900)
+    })
+
+    expect(bankId()).toBeNull()
   })
 })

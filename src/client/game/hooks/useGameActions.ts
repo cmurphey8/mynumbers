@@ -7,7 +7,6 @@ export function useGameActions() {
   const state = useGameState()
   const dispatch = useGameDispatch()
   const autoCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const generatePuzzle = useCallback(() => {
     let difficulty = 3
@@ -91,17 +90,6 @@ export function useGameActions() {
         type: "SET_RESULT",
         result: { text: "Correct!", type: "success" },
       })
-      // Every mode hands out the next puzzle on a correct answer — practice is
-      // the mode the game opens in, and without this it would end after one.
-      // The pause is long enough for the board's green "solved" state to
-      // register before the puzzle is replaced.
-      if (advanceRef.current) {
-        clearTimeout(advanceRef.current)
-      }
-      advanceRef.current = setTimeout(() => {
-        advanceRef.current = null
-        generatePuzzle()
-      }, 900)
       return
     }
 
@@ -117,7 +105,24 @@ export function useGameActions() {
       type: "SET_RESULT",
       result: { text: `Result: ${evalDisplay}`, type: "" },
     })
-  }, [state, dispatch, generatePuzzle])
+  }, [state, dispatch])
+
+  /**
+   * A solved board hands out the next puzzle after a pause long enough for its
+   * green "solved" state to register. This is an effect rather than a timeout
+   * fired from the check so that the pending advance belongs to the session
+   * that scheduled it: React clears it whenever that session goes away — the
+   * mode changes, the summary modal opens on a restart or an expired clock, or
+   * the game unmounts — and a puzzle built for the session being left can
+   * never land in the one being entered. Re-checking an already-solved board
+   * does not restart the pause either, since nothing it touches is a
+   * dependency here.
+   */
+  useEffect(() => {
+    if (!state.puzzleSolved || state.showGameOverModal) return
+    const timer = setTimeout(generatePuzzle, 900)
+    return () => clearTimeout(timer)
+  }, [state.puzzleSolved, state.showGameOverModal, generatePuzzle])
 
   const scheduleAutoCheck = useCallback(() => {
     if (autoCheckRef.current) {
@@ -176,18 +181,13 @@ export function useGameActions() {
     dispatch({ type: "START_RUSH", minutes: state.mode === "rush3" ? 3 : 5 })
   }, [dispatch, state.mode])
 
-  // Drop pending work when the mode changes or the game unmounts, so a check
-  // or a puzzle scheduled for the session being left cannot land in the one
-  // being entered.
+  // Drop a pending check when the mode changes or the game unmounts, so it
+  // cannot run against the session being entered, or against a gone component.
   useEffect(() => {
     return () => {
       if (autoCheckRef.current) {
         clearTimeout(autoCheckRef.current)
         autoCheckRef.current = null
-      }
-      if (advanceRef.current) {
-        clearTimeout(advanceRef.current)
-        advanceRef.current = null
       }
     }
   }, [state.mode])
