@@ -90,19 +90,16 @@ export function App() {
   const prevSlotValuesRef = useRef(state.slotValues)
 
   // Generate a puzzle whenever a mode is active but has none — on entering a
-  // mode, and again after switching or restarting (both clear the puzzle).
-  // The ref keeps a failed generation from retrying in a loop; it clears as
-  // soon as a puzzle lands.
-  const hasGenerated = useRef(false)
+  // mode, and again after switching or restarting, both of which clear it.
+  // A failed generation latches in state rather than in a ref, which keeps it
+  // from retrying in a loop while still leaving the player a way to ask again:
+  // starting any session clears the latch, and that change is what brings this
+  // effect back to try a mode it is already in.
   useEffect(() => {
-    if (state.mode && !state.puzzle && !hasGenerated.current) {
-      hasGenerated.current = true
+    if (state.mode && !state.puzzle && !state.generateFailed) {
       generatePuzzle()
     }
-    if (state.puzzle || !state.mode) {
-      hasGenerated.current = false
-    }
-  }, [state.mode, state.puzzle, generatePuzzle])
+  }, [state.mode, state.puzzle, state.generateFailed, generatePuzzle])
 
   // Auto-check when all slots are filled
   useEffect(() => {

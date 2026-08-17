@@ -24,6 +24,12 @@ export interface GameState {
   result: { text: string; type: "success" | "error" | "" } | null
   showGameOverModal: boolean
   showCountdown: boolean
+  /**
+   * Set when the generator cannot produce a puzzle for the current mode, and
+   * cleared by the next session. It keeps a mode that cannot be generated from
+   * retrying in a loop, while leaving the player a way to ask again.
+   */
+  generateFailed: boolean
   countdownNumber: number | string
 }
 
@@ -37,6 +43,7 @@ export type GameAction =
   | { type: "START_PRACTICE" }
   | { type: "START_RUSH"; minutes: number }
   | { type: "SET_PUZZLE"; puzzle: Puzzle; bankItems: BankItem[] }
+  | { type: "GENERATE_FAILED" }
   | { type: "PLACE_TILE"; tileId: string; slotIndex: number }
   | { type: "REMOVE_TILE"; slotIndex: number }
   | { type: "RESET_SLOTS" }

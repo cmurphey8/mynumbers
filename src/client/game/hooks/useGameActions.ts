@@ -20,10 +20,7 @@ export function useGameActions() {
       data = puzzleRush({ difficulty, decoys: 2 })
     } catch (e) {
       console.error("Generate puzzle error", e)
-      dispatch({
-        type: "SET_RESULT",
-        result: { text: "Failed to generate puzzle.", type: "error" },
-      })
+      dispatch({ type: "GENERATE_FAILED" })
       return
     }
 

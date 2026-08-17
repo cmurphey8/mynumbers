@@ -33,6 +33,7 @@ const initialState: GameState = {
   showGameOverModal: false,
   showCountdown: false,
   countdownNumber: 3,
+  generateFailed: false,
 }
 
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -46,8 +47,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         puzzlesSolved: 0,
         puzzleSolved: false,
         rushStarted: false,
-        // Cleared so the app generates a fresh puzzle for the new mode.
+        // Cleared so the app generates a fresh puzzle for the new mode, and
+        // tries again even if generating for the last one failed.
         puzzle: null,
+        generateFailed: false,
         slotValues: [],
         bankItems: [],
         result: null,
@@ -68,8 +71,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         // Every rush opens with the countdown, which is what starts the clock.
         showCountdown: true,
         countdownNumber: 3,
-        // Cleared so the app generates a fresh puzzle for the new session.
+        // Cleared so the app generates a fresh puzzle for the new session, and
+        // tries again even if generating for the last one failed.
         puzzle: null,
+        generateFailed: false,
         slotValues: [],
         bankItems: [],
         result: null,
@@ -81,12 +86,22 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         puzzle: action.puzzle,
+        generateFailed: false,
         slotValues,
         bankItems: action.bankItems,
         puzzleSolved: false,
         result: null,
       }
     }
+
+    // Latches until the next session so the failure is reported once rather
+    // than retried on every render.
+    case "GENERATE_FAILED":
+      return {
+        ...state,
+        generateFailed: true,
+        result: { text: "Failed to generate puzzle.", type: "error" },
+      }
 
     case "PLACE_TILE": {
       const bankItems = state.bankItems.map(item =>
