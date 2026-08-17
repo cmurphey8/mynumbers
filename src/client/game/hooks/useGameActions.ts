@@ -7,6 +7,7 @@ export function useGameActions() {
   const state = useGameState()
   const dispatch = useGameDispatch()
   const autoCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const generatePuzzle = useCallback(() => {
     let difficulty = 3
@@ -90,10 +91,17 @@ export function useGameActions() {
         type: "SET_RESULT",
         result: { text: "Correct!", type: "success" },
       })
-      if (state.mode === "rush3" || state.mode === "rush5") {
-        // Long enough for the board's green "solved" state to register.
-        setTimeout(() => generatePuzzle(), 900)
+      // Every mode hands out the next puzzle on a correct answer — practice is
+      // the mode the game opens in, and without this it would end after one.
+      // The pause is long enough for the board's green "solved" state to
+      // register before the puzzle is replaced.
+      if (advanceRef.current) {
+        clearTimeout(advanceRef.current)
       }
+      advanceRef.current = setTimeout(() => {
+        advanceRef.current = null
+        generatePuzzle()
+      }, 900)
       return
     }
 
@@ -168,16 +176,21 @@ export function useGameActions() {
     dispatch({ type: "START_RUSH", minutes: state.mode === "rush3" ? 3 : 5 })
   }, [dispatch, state.mode])
 
-  // Drop a pending auto-check on unmount so it cannot fire against a gone
-  // component.
+  // Drop pending work when the mode changes or the game unmounts, so a check
+  // or a puzzle scheduled for the session being left cannot land in the one
+  // being entered.
   useEffect(() => {
     return () => {
       if (autoCheckRef.current) {
         clearTimeout(autoCheckRef.current)
         autoCheckRef.current = null
       }
+      if (advanceRef.current) {
+        clearTimeout(advanceRef.current)
+        advanceRef.current = null
+      }
     }
-  }, [])
+  }, [state.mode])
 
   return {
     generatePuzzle,
