@@ -10,7 +10,12 @@ const BankRow = styled.div`
   gap: var(--am-bank-gap);
   width: 100%;
   min-height: var(--am-tile);
-  touch-action: none;
+  /* The bank covers much of the board, so suppressing gestures here stops a
+     swipe that starts on it from panning the page at all — and on a narrow
+     screen the page is what the player has to pan to reach the target. Tiles
+     are placed by tap, and native drag-and-drop does not fire from touch, so
+     there is no drag for panning to interfere with. */
+  touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;

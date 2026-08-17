@@ -9,11 +9,15 @@ const DISPLAY_OPS: Record<string, string> = {
 
 const TemplateWrapper = styled.div`
   width: 100%;
-  /* Belt-and-braces: the row is built to fit (see EquationRow), so this should
-     never engage — but scrolling beats clipping the target if it ever does. */
+  /* The row is built to fit (see EquationRow), but a narrow enough card leaves
+     it wider than the space available, and scrolling beats clipping the target.
+     Panning has to stay available for that scroll — and the page's — to be
+     reachable by touch; only double-tap zoom is dropped, so quick tile taps do
+     not trigger it. Native drag-and-drop does not fire from touch, so nothing
+     here needs gestures suppressed outright. */
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  touch-action: none;
+  touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
