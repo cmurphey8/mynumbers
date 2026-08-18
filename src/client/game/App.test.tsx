@@ -103,6 +103,28 @@ describe("App board locking", () => {
     expect(lockedRegion(container)).toContainElement(screen.getByRole("timer"))
   })
 
+  // Restart opens the summary mid-rush; closing it is the player deciding not
+  // to restart, so they get the rush back rather than a stopped one. Driven
+  // through the real controls, since what Restart itself dispatches is the
+  // difference between resuming and being stranded.
+  it("returns the board to play when a restart's summary is closed", async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithGame(<App />, {
+      actions: [
+        { type: "START_RUSH", minutes: 3 },
+        { type: "HIDE_COUNTDOWN" },
+        { type: "SET_RUSH_STARTED", started: true },
+      ],
+    })
+
+    await user.click(screen.getByRole("button", { name: "Restart" }))
+    expect(screen.getByRole("dialog", { name: "Rush Complete!" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(lockedRegion(container)).toBeNull()
+  })
+
   it("returns the board to play when a dismissed practice summary leaves it running", () => {
     const { container } = renderWithGame(<App />, {
       actions: [

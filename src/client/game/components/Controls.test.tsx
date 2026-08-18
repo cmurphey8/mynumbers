@@ -48,7 +48,9 @@ describe("Controls", () => {
     expect(probe).toHaveAttribute("data-mode", "practice")
   })
 
-  it("stops the clock and opens the modal on Restart in rush mode", async () => {
+  // Restart offers the replay rather than performing it, so a player who
+  // dismisses the modal still has the rush they were part-way through.
+  it("opens the modal without ending the rush on Restart in rush mode", async () => {
     const user = userEvent.setup()
     renderWithGame(
       <>
@@ -66,6 +68,6 @@ describe("Controls", () => {
     await user.click(screen.getByRole("button", { name: "Restart" }))
     const probe = screen.getByTestId("state-probe")
     expect(probe).toHaveAttribute("data-game-over", "true")
-    expect(probe).toHaveAttribute("data-rush-started", "false")
+    expect(probe).toHaveAttribute("data-rush-started", "true")
   })
 })

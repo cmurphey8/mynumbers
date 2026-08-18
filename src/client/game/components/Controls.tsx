@@ -111,15 +111,13 @@ export function Controls() {
   else if (mode === "rush5") options = [practiceOption, rushOption(3)]
   else options = [rushOption(3), rushOption(5)]
 
-  // Restart closes out the current session and hands over to the
-  // session-complete modal, which offers the replay. In rush that also has to
-  // stop the clock, which END_RUSH does.
+  // Restart hands over to the session-complete modal, which is where the
+  // replay and the other modes are offered. It does not end the session
+  // itself: a rush's clock only holds while that modal is up, so dismissing it
+  // returns the player to the rush they were part-way through rather than to a
+  // stopped one. The clock running out is what ends a rush.
   function handleRestart() {
-    if (isRush) {
-      dispatch({ type: "END_RUSH" })
-    } else {
-      dispatch({ type: "SHOW_GAME_OVER_MODAL" })
-    }
+    dispatch({ type: "SHOW_GAME_OVER_MODAL" })
   }
 
   return (
