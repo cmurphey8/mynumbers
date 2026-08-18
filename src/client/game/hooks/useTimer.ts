@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from "react"
 import { useGameState, useGameDispatch } from "../context/GameContext"
 
 export function useTimer() {
-  const { mode, rushStarted, timeRemaining } = useGameState()
+  const { mode, rushStarted, timeRemaining, showGameOverModal } = useGameState()
   const dispatch = useGameDispatch()
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -22,15 +22,18 @@ export function useTimer() {
     }, 1000)
   }, [dispatch, stopTimer])
 
-  // Start timer when rush starts
+  // The clock runs while a rush is live and the summary is not covering it.
+  // Restart opens that summary mid-rush, so the clock holds rather than being
+  // spent behind a dialog the player cannot play through — and picks up again
+  // if they dismiss it instead of starting something new.
   useEffect(() => {
-    if (isRush && rushStarted) {
+    if (isRush && rushStarted && !showGameOverModal) {
       startTimer()
     } else {
       stopTimer()
     }
     return stopTimer
-  }, [isRush, rushStarted, startTimer, stopTimer])
+  }, [isRush, rushStarted, showGameOverModal, startTimer, stopTimer])
 
   // End rush when time runs out
   useEffect(() => {

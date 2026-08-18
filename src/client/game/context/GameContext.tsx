@@ -16,41 +16,58 @@ export function calculateDifficulty(solved: number): number {
   return 12
 }
 
+/**
+ * Whether the session on the board can still be played on.
+ *
+ * A rush is over the moment its clock stops, which is not the same as its
+ * summary being on screen: the summary can be dismissed to look back at the
+ * final board, and that board must stay read-only. Otherwise the player could
+ * keep solving at 0:00 and run the score past the one the summary reported.
+ * Practice has no clock, so only its summary ends it.
+ */
+export function isSessionOver(state: GameState): boolean {
+  if (state.showGameOverModal) return true
+  const isRush = state.mode === "rush3" || state.mode === "rush5"
+  return isRush && !state.rushStarted && !state.showCountdown
+}
+
+// There is no mode-selection screen: the game opens straight into practice and
+// the controls bar switches modes from there.
 const initialState: GameState = {
-  mode: null,
+  mode: "practice",
   puzzle: null,
   puzzlesSolved: 0,
+  puzzleSolved: false,
   timeRemaining: 0,
   currentDifficulty: 1,
   maxDifficultyReached: 1,
   rushStarted: false,
-  rushIntroPlaying: false,
   slotValues: [],
   bankItems: [],
   result: null,
-  showMenu: true,
-  showRushReadyModal: false,
   showGameOverModal: false,
   showCountdown: false,
   countdownNumber: 3,
+  generateFailed: false,
 }
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case "SHOW_MENU":
-      return {
-        ...initialState,
-        showMenu: true,
-      }
-
     case "START_PRACTICE":
       return {
         ...state,
         mode: "practice",
-        showMenu: false,
-        showRushReadyModal: false,
         showGameOverModal: false,
+        showCountdown: false,
         puzzlesSolved: 0,
+        puzzleSolved: false,
+        rushStarted: false,
+        // Cleared so the app generates a fresh puzzle for the new mode, and
+        // tries again even if generating for the last one failed.
+        puzzle: null,
+        generateFailed: false,
+        slotValues: [],
+        bankItems: [],
         result: null,
       }
 
@@ -59,15 +76,22 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         mode: mode as "rush3" | "rush5",
-        showMenu: false,
-        showRushReadyModal: false,
         showGameOverModal: false,
         puzzlesSolved: 0,
+        puzzleSolved: false,
         currentDifficulty: 1,
         maxDifficultyReached: 1,
         timeRemaining: action.minutes * 60,
         rushStarted: false,
-        rushIntroPlaying: !action.skipIntro,
+        // Every rush opens with the countdown, which is what starts the clock.
+        showCountdown: true,
+        countdownNumber: 3,
+        // Cleared so the app generates a fresh puzzle for the new session, and
+        // tries again even if generating for the last one failed.
+        puzzle: null,
+        generateFailed: false,
+        slotValues: [],
+        bankItems: [],
         result: null,
       }
     }
@@ -77,11 +101,22 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         puzzle: action.puzzle,
+        generateFailed: false,
         slotValues,
         bankItems: action.bankItems,
+        puzzleSolved: false,
         result: null,
       }
     }
+
+    // Latches until the next session so the failure is reported once rather
+    // than retried on every render.
+    case "GENERATE_FAILED":
+      return {
+        ...state,
+        generateFailed: true,
+        result: { text: "Failed to generate puzzle.", type: "error" },
+      }
 
     case "PLACE_TILE": {
       const bankItems = state.bankItems.map(item =>
@@ -120,29 +155,19 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case "TICK_TIMER":
       return { ...state, timeRemaining: Math.max(0, state.timeRemaining - 1) }
 
+    // Clearing showCountdown also cancels a countdown still in flight, so a
+    // restart mid-countdown cannot start the clock behind the summary modal.
     case "END_RUSH":
-      return { ...state, rushStarted: false, showGameOverModal: true }
+      return { ...state, rushStarted: false, showCountdown: false, showGameOverModal: true }
 
     case "SET_RUSH_STARTED":
       return { ...state, rushStarted: action.started }
-
-    case "SET_RUSH_INTRO_PLAYING":
-      return { ...state, rushIntroPlaying: action.playing }
-
-    case "SHOW_RUSH_READY_MODAL":
-      return { ...state, showRushReadyModal: true }
-
-    case "HIDE_RUSH_READY_MODAL":
-      return { ...state, showRushReadyModal: false }
 
     case "SHOW_GAME_OVER_MODAL":
       return { ...state, showGameOverModal: true }
 
     case "HIDE_GAME_OVER_MODAL":
       return { ...state, showGameOverModal: false }
-
-    case "SHOW_COUNTDOWN":
-      return { ...state, showCountdown: true }
 
     case "SET_COUNTDOWN_NUMBER":
       return { ...state, countdownNumber: action.value }
@@ -151,7 +176,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, showCountdown: false }
 
     case "INCREMENT_SOLVED":
-      return { ...state, puzzlesSolved: state.puzzlesSolved + 1 }
+      return { ...state, puzzlesSolved: state.puzzlesSolved + 1, puzzleSolved: true }
 
     case "SET_DIFFICULTY": {
       const maxD = Math.max(state.maxDifficultyReached, action.difficulty)

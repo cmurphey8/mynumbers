@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import { useGameState, useGameDispatch, calculateDifficulty } from "../context/GameContext"
+import { useCallback, useEffect, useRef } from "react"
+import {
+  useGameState,
+  useGameDispatch,
+  calculateDifficulty,
+  isSessionOver,
+} from "../context/GameContext"
 import { puzzleRush, puzzleCheck, type PuzzleOut, type CheckResult } from "../generator"
 import type { BankItem, Puzzle } from "../types"
 
@@ -7,8 +12,6 @@ export function useGameActions() {
   const state = useGameState()
   const dispatch = useGameDispatch()
   const autoCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const countdownTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
-  const [equations, setEquations] = useState<string[]>([])
 
   const generatePuzzle = useCallback(() => {
     let difficulty = 3
@@ -22,10 +25,7 @@ export function useGameActions() {
       data = puzzleRush({ difficulty, decoys: 2 })
     } catch (e) {
       console.error("Generate puzzle error", e)
-      dispatch({
-        type: "SET_RESULT",
-        result: { text: "Failed to generate puzzle.", type: "error" },
-      })
+      dispatch({ type: "GENERATE_FAILED" })
       return
     }
 
@@ -64,7 +64,6 @@ export function useGameActions() {
     }
 
     const expression = parts.join("")
-    const displayExpr = expression.replace(/\*/g, "×").replace(/\//g, "÷")
 
     const result: CheckResult = puzzleCheck({
       numbers: puzzle.numbers,
@@ -83,20 +82,16 @@ export function useGameActions() {
     }
 
     if (result.reason === "correct") {
-      if (state.mode === "rush3" || state.mode === "rush5") {
+      // Count the solve once per puzzle, in every mode — the session-complete
+      // modal reports it as the final score. Re-filling an already-solved
+      // board must not inflate it.
+      if (!state.puzzleSolved) {
         dispatch({ type: "INCREMENT_SOLVED" })
-        setEquations(prev => [...prev, `${displayExpr} = ${puzzle.target}`])
-        dispatch({
-          type: "SET_RESULT",
-          result: { text: `Correct! Level ${state.puzzlesSolved + 2}`, type: "success" },
-        })
-        setTimeout(() => generatePuzzle(), 600)
-      } else {
-        dispatch({
-          type: "SET_RESULT",
-          result: { text: `Correct! ${displayExpr} = ${evalDisplay}`, type: "success" },
-        })
       }
+      dispatch({
+        type: "SET_RESULT",
+        result: { text: "Correct!", type: "success" },
+      })
       return
     }
 
@@ -112,7 +107,25 @@ export function useGameActions() {
       type: "SET_RESULT",
       result: { text: `Result: ${evalDisplay}`, type: "" },
     })
-  }, [state, dispatch, generatePuzzle])
+  }, [state, dispatch])
+
+  /**
+   * A solved board hands out the next puzzle after a pause long enough for its
+   * green "solved" state to register. This is an effect rather than a timeout
+   * fired from the check so that the pending advance belongs to the session
+   * that scheduled it: React clears it whenever that session goes away — the
+   * mode changes, the session ends, or the game unmounts — and a puzzle built
+   * for the session being left can never land in the one being entered, nor
+   * replace the final board of one that has finished. Re-checking an
+   * already-solved board does not restart the pause either, since nothing it
+   * touches is a dependency here.
+   */
+  const sessionOver = isSessionOver(state)
+  useEffect(() => {
+    if (!state.puzzleSolved || sessionOver) return
+    const timer = setTimeout(generatePuzzle, 900)
+    return () => clearTimeout(timer)
+  }, [state.puzzleSolved, sessionOver, generatePuzzle])
 
   const scheduleAutoCheck = useCallback(() => {
     if (autoCheckRef.current) {
@@ -128,25 +141,22 @@ export function useGameActions() {
     dispatch({ type: "END_RUSH" })
   }, [dispatch])
 
-  const resetEquations = useCallback(() => {
-    setEquations([])
-  }, [])
-
+  /**
+   * Steps the pre-rush countdown 3 → 2 → 1 → GO!, then hands over to the clock.
+   * Returns a cancel function: the caller runs it when the countdown is torn
+   * down early (mode switch, restart, unmount) so no later step lands.
+   */
   const startCountdown = useCallback(() => {
-    // Clear any timeouts left over from a previous countdown.
-    countdownTimeoutsRef.current.forEach(clearTimeout)
-    countdownTimeoutsRef.current = []
-
-    dispatch({ type: "SHOW_COUNTDOWN" })
+    const timeouts: ReturnType<typeof setTimeout>[] = []
     let count = 3
 
     function tick() {
       dispatch({ type: "SET_COUNTDOWN_NUMBER", value: count })
       if (count === 1) {
-        countdownTimeoutsRef.current.push(
+        timeouts.push(
           setTimeout(() => {
             dispatch({ type: "SET_COUNTDOWN_NUMBER", value: "GO!" })
-            countdownTimeoutsRef.current.push(
+            timeouts.push(
               setTimeout(() => {
                 dispatch({ type: "HIDE_COUNTDOWN" })
                 dispatch({ type: "SET_RUSH_STARTED", started: true })
@@ -157,34 +167,33 @@ export function useGameActions() {
         return
       }
       count--
-      countdownTimeoutsRef.current.push(setTimeout(tick, 750))
+      timeouts.push(setTimeout(tick, 750))
     }
     tick()
+
+    return () => timeouts.forEach(clearTimeout)
   }, [dispatch])
 
-  const handleRushReady = useCallback(() => {
-    dispatch({ type: "HIDE_RUSH_READY_MODAL" })
-    dispatch({ type: "SET_RUSH_INTRO_PLAYING", playing: false })
-  }, [dispatch])
-
+  /** Replay whichever mode just finished. */
   const playAgain = useCallback(() => {
     dispatch({ type: "HIDE_GAME_OVER_MODAL" })
-    const was3 = state.mode === "rush3"
-    dispatch({ type: "START_RUSH", minutes: was3 ? 3 : 5, skipIntro: true })
+    if (state.mode === "practice") {
+      dispatch({ type: "START_PRACTICE" })
+      return
+    }
+    dispatch({ type: "START_RUSH", minutes: state.mode === "rush3" ? 3 : 5 })
   }, [dispatch, state.mode])
 
-  // Clear any pending timeouts on unmount to avoid state updates after the
-  // component is gone (e.g. navigating back to the menu mid-countdown).
+  // Drop a pending check when the mode changes or the game unmounts, so it
+  // cannot run against the session being entered, or against a gone component.
   useEffect(() => {
     return () => {
-      countdownTimeoutsRef.current.forEach(clearTimeout)
-      countdownTimeoutsRef.current = []
       if (autoCheckRef.current) {
         clearTimeout(autoCheckRef.current)
         autoCheckRef.current = null
       }
     }
-  }, [])
+  }, [state.mode])
 
   return {
     generatePuzzle,
@@ -192,9 +201,6 @@ export function useGameActions() {
     scheduleAutoCheck,
     endRush,
     startCountdown,
-    handleRushReady,
     playAgain,
-    resetEquations,
-    equations,
   }
 }
